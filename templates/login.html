@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - PixCollector</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <!-- Bulma CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #dbeafe 0%, #ffffff 50%, #f3e8ff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+        
+        .login-container {
+            max-width: 32rem;
+            width: 100%;
+            padding: 2rem 1rem;
+        }
+        
+        .title-container {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .title-container img {
+            width: 3rem;
+            height: 3rem;
+            object-fit: contain;
+        }
+        
+        .title-container h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #111827;
+            margin: 0;
+        }
+        
+        .title-container h1 span {
+            background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #4b5563;
+            font-size: 1.125rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .login-box {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            padding: 2.5rem;
+            border: 1px solid #f3f4f6;
+        }
+        
+        .field label.label {
+            font-weight: 700;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+        
+        .icon-field {
+            position: relative;
+        }
+        
+        .icon-field .icon {
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+        
+        .icon-field .input {
+            padding-left: 3rem;
+            padding-right: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            border-radius: 1rem;
+            font-size: 1.125rem;
+            border: 1px solid #d1d5db;
+            transition: all 0.2s;
+        }
+        
+        .icon-field .input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        .login-button {
+            width: 100%;
+            background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+            color: white;
+            font-weight: 700;
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            font-size: 1.125rem;
+            border: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+        }
+        
+        .login-button:hover {
+            background: linear-gradient(90deg, #1d4ed8 0%, #7e22ce 100%);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(-0.25rem);
+        }
+        
+        .login-button:active {
+            transform: scale(0.95);
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #4b5563;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .back-link:hover {
+            color: #2563eb;
+        }
+        
+        .back-link svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
+        }
+        
+        .footer-info {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+        
+        /* Toastify 自定义样式 */
+        .toastify {
+            border-radius: 12px;
+            padding: 16px 24px;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录表单容器 -->
+    <div class="login-container animate__animated animate__fadeIn">
+        <!-- Logo和标题 -->
+        <div class="title-container">
+            <img src="/static/img/logo.png" alt="PixCollector Logo">
+            <h1><span>Pix</span>Collector</h1>
+        </div>
+        <p class="subtitle">登录以配置参数或查看作品</p>
+
+        <!-- 登录表单 -->
+        <div class="login-box">
+            <form method="POST">
+                <div class="field">
+                    <label for="username" class="label">用户名</label>
+                    <div class="icon-field">
+                        <span class="icon">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 007-7z" />
+                            </svg>
+                        </span>
+                        <input type="text" id="username" name="username" required autocomplete="username"
+                            class="input"
+                            placeholder="输入您的用户名">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="password" class="label">密码</label>
+                    <div class="icon-field">
+                        <span class="icon">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2 2v6a2 2 0 012 2m10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </span>
+                        <input type="password" id="password" name="password" required autocomplete="current-password"
+                            class="input"
+                            placeholder="输入您的密码">
+                    </div>
+                </div>
+
+                <div class="field mt-6">
+                    <button type="submit" class="login-button" id="login-button">
+                        登录
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 返回首页按钮 -->
+        <div class="has-text-centered mt-5">
+            <a href="/" class="back-link">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                返回首页
+            </a>
+        </div>
+
+        <!-- 提示信息 -->
+        <div class="footer-info">
+            <p>© 2024 PixCollector. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- Toastify JS -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
+    <!-- 全局Notify函数 -->
+    <script>
+        function notify(message, type = 'info') {
+            const colors = {
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            };
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '!',
+                info: 'i'
+            };
+            
+            const color = colors[type] || colors.info;
+            
+            Toastify({
+                text: `${icons[type]} ${message}`,
+                duration: 3000,
+                gravity: "top",
+                position: "right",
+                className: "animate__animated animate__fadeInRight",
+                style: {
+                    background: '#ffffff',
+                    color: color,
+                    border: `2px solid ${color}`,
+                    borderRadius: '12px',
+                    padding: '16px 24px',
+                    fontWeight: '500',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                }
+            }).showToast();
+        }
+        
+        // 登录按钮点击动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginButton = document.getElementById('login-button');
+            const form = document.querySelector('form');
+            
+            form.addEventListener('submit', function(e) {
+                // 添加加载动画
+                loginButton.classList.add('animate__animated', 'animate__pulse');
+                loginButton.innerHTML = `
+                    <span style="display: inline-block; animation: spin 1s linear infinite;">
+                        <svg style="width: 1.25rem; height: 1.25rem; animation: spin 1s linear infinite;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4 A8 8 0 1 1 6.343 6.343 M8 6 H6 V8" />
+                        </svg>
+                    </span>
+                `;
+                
+                // 3秒后移除动画（无论成功失败）
+                setTimeout(function() {
+                    loginButton.classList.remove('animate__animated', 'animate__pulse');
+                    loginButton.innerHTML = '登录';
+                }, 3000);
+            });
+            
+            // 添加旋转动画样式
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+    
+    <!-- 登录错误提示 -->
+    {% if login_error %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            notify('{{ login_error }}', 'error');
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

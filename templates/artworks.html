@@ -1,0 +1,964 @@
+{% extends "base.html" %}
+
+{% block title %}作品列表 - PixCollector{% endblock %}
+
+{% block content %}
+<style>
+    .filter-container {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        border: 1px solid #f3f4f6;
+        overflow: hidden;
+    }
+    
+    .artwork-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        transition: all 0.3s;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    /* 失效卡片样式 */
+    .artwork-card.invalid-card {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        border: 1px solid #fecaca;
+    }
+
+    /* 失效卡片hover增强效果 */
+    .artwork-card.invalid-card:hover {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecdd3 100%);
+        box-shadow: 0 20px 25px -5px rgba(239, 68, 68, 0.2), 
+                    0 10px 10px -5px rgba(239, 68, 68, 0.1);
+    }
+    
+    .artwork-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-0.25rem);
+    }
+    
+    .artwork-card img {
+        transition: transform 0.3s;
+    }
+    
+    .artwork-card img:hover {
+        transform: scale(1.05);
+    }
+    
+    /* 紧凑筛选器样式 */
+    .filter-container .columns {
+        margin: -0.5rem;
+    }
+
+    .filter-container .column {
+        padding: 0.5rem;
+    }
+
+    .filter-container .input,
+    .filter-container .select {
+        font-size: 0.875rem;
+        height: 2.5rem;
+    }
+
+    .filter-container .label {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .tag-badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        margin-right: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stats-box {
+        background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        color: white;
+    }
+    
+    .preview-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(4px);
+        transition: opacity 0.3s;
+    }
+    
+    .preview-modal.opacity-0 {
+        opacity: 0;
+    }
+    
+    .preview-modal.hidden {
+        display: none;
+    }
+    
+    .nav-btn {
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border-radius: 9999px;
+        padding: 1rem;
+        transition: background 0.2s;
+    }
+    
+    .nav-btn:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
+    
+    .close-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 9999px;
+        padding: 0.5rem;
+        transition: background 0.2s;
+        backdrop-filter: blur(4px);
+    }
+    
+    .close-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .tags-container {
+        max-height: 3.5em;
+        overflow: hidden;
+        transition: max-height 0.3s;
+    }
+    
+    .tags-container:hover {
+        max-height: none;
+    }
+    
+    .search-button {
+        width: 100%;
+        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+        height: 3rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .search-button:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #1e40af 100%);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-0.125rem);
+    }
+    
+    .page-indicator {
+        position: absolute;
+        top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        z-index: 30;
+    }
+    
+    /* 分页按钮样式增强 */
+    .button.is-primary {
+        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%) !important;
+        border-color: #1d4ed8 !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    
+    .button.is-primary:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #1e40af 100%) !important;
+    }
+    
+    .button.is-primary.is-small {
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    
+    .button.is-primary.is-small:hover {
+        background: linear-gradient(90deg, #059669 0%, #047857 100%) !important;
+    }
+</style>
+
+<div style="margin-bottom: 1.5rem;">
+    <!-- 页面标题 -->
+    <div style="margin-bottom: 2rem;">
+        <h1 class="title is-3">作品列表</h1>
+        <p class="subtitle is-6 has-text-grey mt-3">浏览和管理所有采集的作品</p>
+    </div>
+
+    <!-- 筛选器 -->
+    <div class="filter-container">
+        <div style="padding: 1.25rem;">
+            <div class="level is-mobile" style="margin-bottom: 1rem;">
+                <div class="level-left">
+                    <h2 class="title is-5">筛选条件</h2>
+                </div>
+                <div class="level-right">
+                    <button onclick="toggleFilter()" class="button is-ghost has-text-primary is-small" id="filter-toggle-btn">
+                        <span id="filter-toggle-text">收起</span>
+                        <span id="filter-toggle-icon" class="icon" style="transition: transform 0.3s;">
+                            <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="filter-content" class="animate__animated" style="transition: max-height 0.3s; overflow: hidden;">
+                <!-- 第一行：标签、作者、illust_id、R18 -->
+                <div class="columns is-variable">
+                    <div class="column is-3">
+                        <label class="label is-small">搜索标签</label>
+                        <input type="text" id="search-tags" placeholder="逗号分隔" class="input is-small">
+                    </div>
+                    <div class="column is-3">
+                        <label class="label is-small">作者名</label>
+                        <input type="text" id="search-author" placeholder="输入作者名" class="input is-small">
+                    </div>
+                    <div class="column is-3">
+                        <label class="label is-small">作品Id</label>
+                        <input type="text" id="search-illust-id" placeholder="作品ID" class="input is-small">
+                    </div>
+                    <div class="column is-3">
+                        <label class="label is-small">R18</label>
+                        <div class="select is-fullwidth">
+                            <select id="r18-filter" class="is-small">
+                                <option value="all">全部</option>
+                                <option value="false">非R18</option>
+                                <option value="true">R18</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第二行：标签匹配、类型、采集类型 -->
+                <div class="columns is-variable mt-3">
+                    <div class="column is-3">
+                        <label class="label is-small">标签匹配</label>
+                        <div class="select is-fullwidth">
+                            <select id="tags-match" class="is-small">
+                                <option value="or">任一标签</option>
+                                <option value="and">所有标签</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <label class="label is-small">作品类型</label>
+                        <div class="select is-fullwidth">
+                            <select id="type-filter" class="is-small">
+                                <option value="all">全部</option>
+                                <option value="illust">插画</option>
+                                <option value="manga">漫画</option>
+                                <option value="ugoira">动画</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <label class="label is-small">采集类型</label>
+                        <div class="select is-fullwidth">
+                            <select id="collect-type-filter" class="is-small">
+                                <option value="all">全部</option>
+                                <option value="ranking_works">排行榜作品</option>
+                                <option value="follow_new_works">关注新作品</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <label class="label is-small">失效状态</label>
+                        <div class="select is-fullwidth">
+                            <select id="valid-filter" class="is-small">
+                                <option value="all">全部</option>
+                                <option value="true">仅有效</option>
+                                <option value="false">仅失效</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第三行：发布时间范围 + 搜索按钮 -->
+                <div class="columns is-variable mt-3">
+                    <div class="column is-5">
+                        <label class="label is-small">发布时间（开始）</label>
+                        <input type="date" id="post-date-start" class="input is-small">
+                    </div>
+                    <div class="column is-5">
+                        <label class="label is-small">发布时间（结束）</label>
+                        <input type="date" id="post-date-end" class="input is-small">
+                    </div>
+                    <div class="column is-2" style="align-self: end; margin-bottom: 0.25rem;">
+                        <button onclick="loadArtworks()" class="button is-primary is-small is-fullwidth">
+                            搜索
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="stats-box mt-5">
+        <p class="is-size-7 has-text-grey-light">共找到 <span id="total-count" class="has-text-weight-bold has-text-white is-size-5">-</span> 部作品</p>
+    </div>
+
+    <!-- 作品列表 -->
+    <div class="columns is-multiline mt-5" id="artworks-container">
+        <!-- 加载状态 -->
+        <div class="column is-12 has-text-centered py-12">
+            <div class="animate__animated animate__spin" style="width: 4rem; height: 4rem; border: 4px solid #2563eb; border-top-color: transparent; border-radius: 50%; margin: 0 auto;"></div>
+        </div>
+    </div>
+
+    <!-- 分页 -->
+    <nav class="mt-8" id="pagination">
+        <div class="has-text-centered py-8">
+            <div class="animate__animated animate__spin" style="width: 2rem; height: 2rem; border: 2px solid #9ca3af; border-top-color: transparent; border-radius: 50%; margin: 0 auto;"></div>
+        </div>
+    </nav>
+
+    <!-- 标记废弃确认对话框 -->
+    <div id="invalidate-modal" class="modal">
+        <div class="modal-background" onclick="closeInvalidateModal()"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">确认标记为废弃</p>
+                <button class="delete" onclick="closeInvalidateModal()" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <p class="has-text-grey mb-4">
+                    确认后将标记为失效，不再显示在随机图库中
+                </p>
+                <div class="field">
+                    <label class="label">废弃原因（可选）</label>
+                    <input type="text" id="invalidate-reason" 
+                           class="input" 
+                           placeholder="填写原因，留空则默认为'Not like'">
+                </div>
+                <div class="field mt-4">
+                    <label class="checkbox">
+                        <input type="checkbox" id="invalidate-all-pages">
+                        <span class="ml-2">删除该作品全部页</span>
+                    </label>
+                    <p class="help has-text-grey mt-2">
+                        勾选后将删除该作品的所有页面，否则只删除当前页
+                    </p>
+                </div>
+            </section>
+            <footer class="modal-card-foot" style="justify-content: flex-end;margin-top: 0;padding: 10px;">
+                <button class="button" onclick="closeInvalidateModal()">取消</button>
+                <button class="button is-danger" onclick="confirmInvalidate()">确认</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- 全屏预览模态框 -->
+    <div id="preview-modal" class="preview-modal hidden opacity-0">
+        <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;" onclick="closePreview()">
+            <div style="position: absolute; inset: 0;" onclick="event.stopPropagation()"></div>
+            <div style="position: relative; max-width: 80rem; max-height: 100vh; width: 100%; padding: 1rem;" onclick="event.stopPropagation()">
+                <!-- 关闭按钮 -->
+                <button onclick="closePreview()" class="close-btn" style="position: absolute; top: 1rem; right: 1rem; z-index: 10;">
+                    <svg style="width: 1.5rem; height: 1.5rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <!-- 图片容器 -->
+                <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%;">
+                    <!-- 页码显示 -->
+                    <div id="page-indicator" class="page-indicator" style="margin-top: -10px;">
+                        1 / 1
+                    </div>
+
+                    <!-- 图片和箭头 -->
+                    <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; margin-top: 3rem;">
+                        <!-- 上一页按钮 -->
+                        <button onclick="event.stopPropagation(); prevPage()" id="prev-page-btn" class="nav-btn" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 20;">
+                            <svg style="width: 1.5rem; height: 1.5rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- 图片 -->
+                        <img id="preview-image" src="" alt="预览" style="max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 0.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); margin: 0 4rem;">
+
+                        <!-- 下一页按钮 -->
+                        <button onclick="event.stopPropagation(); nextPage()" id="next-page-btn" class="nav-btn" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 20;">
+                            <svg style="width: 1.5rem; height: 1.5rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let currentPerPage = 20;
+
+let currentInvalidateId = null;
+let currentInvalidateIndex = null;
+
+function useProxy(url) {
+    return url.replace('https://i.pximg.net', window.config.pixivProxyUrl)
+}
+
+async function loadArtworks(page = 1) {
+    const container = document.getElementById('artworks-container');
+    const pagination = document.getElementById('pagination');
+    
+    // 显示加载状态
+    container.innerHTML = `
+        <div class="column is-12 has-text-centered py-12">
+            <div class="animate__animated animate__spin" style="width: 4rem; height: 4rem; border: 4px solid #2563eb; border-top-color: transparent; border-radius: 50%; margin: 0 auto;"></div>
+        </div>
+    `;
+    pagination.innerHTML = `
+        <div class="has-text-centered py-8">
+            <div class="animate__animated animate__spin" style="width: 2rem; height: 2rem; border: 2px solid #9ca3af; border-top-color: transparent; border-radius: 50%; margin: 0 auto;"></div>
+        </div>
+    `;
+    
+    const tags = document.getElementById('search-tags').value;
+    const tagsMatch = document.getElementById('tags-match').value;
+    const isR18 = document.getElementById('r18-filter').value;
+    const typeFilter = document.getElementById('type-filter').value;
+    const collectTypeFilter = document.getElementById('collect-type-filter').value;
+    const authorName = document.getElementById('search-author').value;
+    const illustId = document.getElementById('search-illust-id').value;
+    const isValid = document.getElementById('valid-filter').value;
+    const postDateStart = document.getElementById('post-date-start').value;
+    const postDateEnd = document.getElementById('post-date-end').value;
+    const perPage = currentPerPage;
+
+    let url = `/api/artworks?page=${page}&per_page=${perPage}`;
+    if (tags) {
+        url += `&tags=${encodeURIComponent(tags)}&tags_match=${tagsMatch}`;
+    }
+    if (authorName) {
+        url += `&author=${encodeURIComponent(authorName)}`;
+    }
+    if (illustId) {
+        url += `&illust_id=${encodeURIComponent(illustId)}`;
+    }
+    if (isR18 !== 'all') {
+        url += `&is_r18=${isR18}`;
+    }
+    if (typeFilter !== 'all') {
+        url += `&type=${typeFilter}`;
+    }
+    if (collectTypeFilter !== 'all') {
+        url += `&collect_type=${collectTypeFilter}`;
+    }
+    if (isValid !== 'all') {
+        url += `&is_valid=${isValid}`;
+    }
+    if (postDateStart) {
+        url += `&post_date_start=${postDateStart}`;
+    }
+    if (postDateEnd) {
+        url += `&post_date_end=${postDateEnd}`;
+    }
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            displayArtworks(data.artworks);
+            document.getElementById('total-count').textContent = data.total;
+            currentPage = page;
+            updatePagination(data.total, data.per_page, page);
+        }
+    } catch (error) {
+        console.error('加载作品失败:', error);
+        notify('加载作品失败', 'error');
+        container.innerHTML = '<div class="column is-12 has-text-centered py-12 has-text-grey">加载失败</div>';
+        pagination.innerHTML = '';
+    }
+}
+
+function displayArtworks(artworks) {
+    const container = document.getElementById('artworks-container');
+    
+    if (artworks.length === 0) {
+        container.innerHTML = `
+            <div class="column is-12 has-text-centered py-12">
+                <div class="has-text-grey-light">
+                    <svg style="width: 4rem; height: 4rem; margin: 0 auto 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="is-size-5 has-text-weight-medium">没有找到符合条件的作品</p>
+                    <p class="is-small mt-2">尝试调整筛选条件</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    // 存储作品数据用于预览
+    window.artworksData = artworks;
+
+    container.innerHTML = artworks.map((artwork, index) => {
+        const tagsHtml = artwork.tags.map(tag => 
+            `<span class="tag is-light tag-badge" style="background-color: #dbeafe; color: #1e40af;">${tag}</span>`
+        ).join('');
+
+        const r18Badge = artwork.is_r18 ? 
+            '<span class="tag is-danger tag-badge">R18</span>' : '';
+        
+        const rankBadge = artwork.rank ? 
+            `<span class="tag is-primary tag-badge">#${artwork.rank}</span>` : '';
+    
+        // 类型标签
+        let typeBadge = '';
+        let typeText = '';
+        if (artwork.type === 'illust') {
+            typeBadge = '<span class="tag is-primary tag-badge">插画</span>';
+            typeText = '插画';
+        } else if (artwork.type === 'manga') {
+            typeBadge = '<span class="tag is-success tag-badge">漫画</span>';
+            typeText = '漫画';
+        } else if (artwork.type === 'ugoira') {
+            typeBadge = '<span class="tag is-info tag-badge">动画</span>';
+            typeText = '动画';
+        } else {
+            typeBadge = `<span class="tag is-grey-light tag-badge">${artwork.type}</span>`;
+            typeText = artwork.type;
+        }
+
+        // 失效样式和tooltip
+        const validClass = artwork.is_valid ? '' : 'invalid-card';
+        const invalidTooltip = !artwork.is_valid ? 
+            `title="失效原因: ${artwork.error_message}"` : '';
+
+        // 页码信息
+        let pageInfo = '';
+        if (artwork.page_count > 1) {
+            pageInfo = `<span class="tag is-info tag-badge">第${artwork.page_index + 1}/${artwork.page_count}页</span>`;
+        }
+
+        const invalidateButton = artwork.is_valid ? `
+            <button onclick="openInvalidateModal(${artwork.id}, ${artwork.illust_id}, ${index})" 
+                    class="button is-small is-danger ml-2" style="margin-right: 0.2rem;">
+                <span class="icon">
+                    <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0111.138 12H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </span>
+            </button>
+        ` : '';
+
+        return `
+            <div class="column is-12-mobile is-6-tablet is-4-desktop is-3-widescreen">
+                <div class="artwork-card ${validClass}" ${invalidTooltip} style="height: 100%; display: flex; flex-direction: column;">
+                    <div style="position: relative;">
+                        <img src="${useProxy(artwork.url)}" 
+                             alt="${artwork.title}" 
+                             loading="lazy"
+                             onclick="openPreview(${index})"
+                             style="width: 100%; height: 14rem; object-fit: cover; cursor: pointer;">
+                    
+                        ${artwork.page_count > 1 ? `
+                        <div style="position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); color: white; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem;">
+                            ${artwork.page_count}P
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="padding: 1.25rem;">
+                        <!-- 标题和按钮行 -->
+                        <div class="level mb-4">
+                            <div class="level-left" style="flex: 1; padding-right: 0.5rem;">
+                                <h3 class="is-size-6 has-text-weight-bold has-text-grey-darker is-clamped" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${r18Badge}${rankBadge}${pageInfo}${typeBadge} ${artwork.title}</h3>
+                            </div>
+                            <div class="level-right">
+                                ${invalidateButton}
+                                ${artwork.share_url ? `
+                                <a href="${artwork.share_url}" target="_blank" 
+                                   class="button is-small is-primary" style="background: linear-gradient(90deg, #4f46e5 0%, #4338ca 100%); border: none;">
+                                    <span class="icon">
+                                        <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14a4 4 0 010-6l2-2a4 4 0 016 6l-1 1" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10a4 4 0 010 6l-2 2a4 4 0 01-6-6l1-1" />
+                                        </svg>
+                                    </span>
+                                </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- 创作时间和作者信息 -->
+                        <p class="is-small has-text-grey mb-3">
+                            <span class="has-text-weight-medium">创作:</span> ${artwork.post_date}<br>
+                            <span class="has-text-weight-medium">作者:</span> ${artwork.author_name}<br>
+                            <span class="has-text-weight-medium">类型:</span> ${typeText}<br>
+                            <span class="has-text-weight-medium">采集:</span> 
+                            <span class="tag is-light" style="background-color: #f3f4f6; color: #374151;">${artwork.collect_type}</span>
+                        </p>
+                        
+                        <!-- Tags（默认3行，hover展开） -->
+                        <div class="mb-3 tags-container">
+                            ${tagsHtml}
+                        </div>
+                        
+                        <!-- 统计数据和采集时间（固定在底部） -->
+                        <div style="margin-top: auto; padding-top: 0.75rem; border-top: 1px solid #f3f4f6;">
+                            <div class="columns is-mobile is-multiline is-vcentered mb-3">
+                                <div class="column">
+                                    <div class="has-text-centered p-2" style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 0.5rem;">
+                                        <p class="is-size-7 has-text-grey mb-1">收藏</p>
+                                        <p class="has-text-weight-bold has-text-primary">${artwork.total_bookmarks}</p>
+                                    </div>
+                                </div>
+                                <div class="column">
+                                    <div class="has-text-centered p-2" style="background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 0.5rem;">
+                                        <p class="is-size-7 has-text-grey mb-1">浏览</p>
+                                        <p class="has-text-weight-bold has-text-success">${artwork.total_view}</p>
+                                    </div>
+                                </div>
+                                <div class="column">
+                                    <div class="has-text-centered p-2" style="background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-radius: 0.5rem;">
+                                        <p class="is-size-7 has-text-grey mb-1">页数</p>
+                                        <p class="has-text-weight-bold has-text-info">${artwork.page_count}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="is-small has-text-grey">
+                                采集时间: ${artwork.created_at}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updatePagination(total, perPage, currentPage) {
+    const totalPages = Math.ceil(total / perPage);
+    const pagination = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = `
+            <div class="has-text-centered">
+                <div class="select is-small">
+                    <select id="per-page" onchange="changePerPage(this.value)">
+                        <option value="20" ${currentPerPage == 20 ? 'selected' : ''}>20条/页</option>
+                        <option value="50" ${currentPerPage == 50 ? 'selected' : ''}>50条/页</option>
+                        <option value="100" ${currentPerPage == 100 ? 'selected' : ''}>100条/页</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.75rem;">';
+    
+    // 上一页
+    html += `
+        <button onclick="loadArtworks(${currentPage - 1})" 
+                class="button ${currentPage === 1 ? 'is-static' : ''}"
+                ${currentPage === 1 ? 'disabled' : ''}>
+            上一页
+        </button>
+    `;
+    
+    // 页码
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <button onclick="loadArtworks(${i})" 
+                        class="button ${i === currentPage ? 'is-primary' : ''}">
+                    ${i}
+                </button>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += '<button class="button is-static">&hellip;</button>';
+        }
+    }
+    
+    // 下一页
+    html += `
+        <button onclick="loadArtworks(${currentPage + 1})" 
+                class="button ${currentPage === totalPages ? 'is-static' : ''}"
+                ${currentPage === totalPages ? 'disabled' : ''}>
+            下一页
+        </button>
+    `;
+    
+    
+    // 页面跳转和每页数量
+    html += `
+        <div class="tags has-addons" style="margin-top: -0.5rem;">
+            <span class="tag" style="margin-top: 0.5rem;">
+                <input type="number" id="jump-page" min="1" max="${totalPages}" placeholder="页码" 
+                       class="input is-small" style="width: 80px;"
+                       onkeypress="if(event.key === 'Enter') jumpToPage()">
+            </span>
+            <button onclick="jumpToPage()" class="button is-primary is-small">
+                跳转
+            </button>
+            <span class="tag is-light">|</span>
+            <div class="select is-small">
+                <select id="per-page" onchange="changePerPage(this.value)">
+                    <option value="20" ${currentPerPage == 20 ? 'selected' : ''}>20条/页</option>
+                    <option value="50" ${currentPerPage == 50 ? 'selected' : ''}>50条/页</option>
+                    <option value="100" ${currentPerPage == 100 ? 'selected' : ''}>100条/页</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    html += '</div>';
+    
+    pagination.innerHTML = html;
+}
+
+function jumpToPage() {
+    const input = document.getElementById('jump-page');
+    const page = parseInt(input.value);
+    const totalPages = Math.ceil(parseInt(document.getElementById('total-count').textContent) / parseInt(document.getElementById('per-page').value));
+    
+    if (page >= 1 && page <= totalPages) {
+        loadArtworks(page);
+    } else {
+        notify(`请输入1-${totalPages}之间的页码`, 'warning');
+        input.value = '';
+    }
+}
+
+function changePerPage(perPage) {
+    currentPerPage = perPage;
+    loadArtworks(1);
+}
+
+// 筛选器折叠功能
+function toggleFilter() {
+    const filterContent = document.getElementById('filter-content');
+    const filterToggleText = document.getElementById('filter-toggle-text');
+    const filterToggleIcon = document.getElementById('filter-toggle-icon');
+    
+    const isCollapsed = filterContent.style.maxHeight === '0px';
+    
+    if (isCollapsed) {
+        // 展开
+        filterContent.style.maxHeight = filterContent.scrollHeight + 'px';
+        filterToggleText.textContent = '收起';
+        filterToggleIcon.style.transform = 'rotate(0deg)';
+        localStorage.setItem('artworks_filter_expanded', 'true');
+    } else {
+        // 收起
+        filterContent.style.maxHeight = '0px';
+        filterToggleText.textContent = '展开';
+        filterToggleIcon.style.transform = 'rotate(-90deg)';
+        localStorage.setItem('artworks_filter_expanded', 'false');
+    }
+}
+
+// 初始化筛选器状态
+function initFilterState() {
+    const isExpanded = localStorage.getItem('artworks_filter_expanded');
+    const filterContent = document.getElementById('filter-content');
+    const filterToggleText = document.getElementById('filter-toggle-text');
+    const filterToggleIcon = document.getElementById('filter-toggle-icon');
+    
+    if (isExpanded === 'false') {
+        filterContent.style.maxHeight = '0px';
+        filterToggleText.textContent = '展开';
+        filterToggleIcon.style.transform = 'rotate(-90deg)';
+    } else {
+        filterContent.style.maxHeight = filterContent.scrollHeight + 'px';
+    }
+}
+
+// 标记废弃功能
+function openInvalidateModal(artworkId, illustId, index) {
+    currentInvalidateId = artworkId;
+    currentInvalidateIllustId = illustId;
+    currentInvalidateIndex = index;
+    document.getElementById('invalidate-reason').value = '';
+    document.getElementById('invalidate-all-pages').checked = false;
+    document.getElementById('invalidate-modal').classList.add('is-active');
+}
+
+function closeInvalidateModal() {
+    document.getElementById('invalidate-modal').classList.remove('is-active');
+    currentInvalidateId = null;
+    currentInvalidateIllustId = null;
+    currentInvalidateIndex = null;
+}
+
+async function confirmInvalidate() {
+    const reason = document.getElementById('invalidate-reason').value.trim();
+    const invalidateAll = document.getElementById('invalidate-all-pages').checked;
+    
+    try {
+        let url, message;
+        if (invalidateAll) {
+            // 删除全部页
+            url = `/api/artworks/by-illust/${currentInvalidateIllustId}/invalidate`;
+            message = `已标记${currentInvalidateIllustId}的全部页为废弃`;
+        } else {
+            // 只删除当前页
+            url = `/api/artworks/${currentInvalidateId}/invalidate`;
+            message = '已标记为废弃';
+        }
+        
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({reason})
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            notify(invalidateAll ? `已删除${data.count || 1}页为废弃` : message, 'success');
+            closeInvalidateModal();
+            // 刷新当前页
+            loadArtworks(currentPage);
+        } else {
+            notify('操作失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('标记废弃失败:', error);
+        notify('操作失败', 'error');
+    }
+}
+
+// 全屏预览相关变量
+let currentArtwork = null;
+let currentPages = [];
+let currentPageIndex = 0;
+
+function openPreview(index) {
+    // 打开预览
+    currentArtwork = window.artworksData[index];
+    
+    // 获取该作品所有页的URL
+    // 从API获取该作品的所有页
+    fetch(`/api/artworks/${currentArtwork.illust_id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 过滤出该作品的所有页
+                currentPages = data.artworks || [currentArtwork];
+                currentPageIndex = currentArtwork.page_index || 0;
+                
+                // 显示预览
+                const modal = document.getElementById('preview-modal');
+                const previewImage = document.getElementById('preview-image');
+                const prevBtn = document.getElementById('prev-page-btn');
+                const nextBtn = document.getElementById('next-page-btn');
+                const pageIndicator = document.getElementById('page-indicator');
+                
+                previewImage.src = useProxy(currentPages[currentPageIndex].url);
+                
+                // 更新页码显示
+                pageIndicator.textContent = `${currentPageIndex + 1} / ${currentPages.length}`;
+                
+                // 如果只有1页，隐藏翻页按钮和页码
+                if (currentPages.length <= 1) {
+                    prevBtn.classList.add('hidden');
+                    nextBtn.classList.add('hidden');
+                    pageIndicator.classList.add('hidden');
+                } else {
+                    prevBtn.classList.remove('hidden');
+                    nextBtn.classList.remove('hidden');
+                    pageIndicator.classList.remove('hidden');
+                }
+                
+                // 显示模态框
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                }, 10);
+                
+                // 阻止页面滚动
+                document.body.style.overflow = 'hidden';
+            }
+        });
+}
+
+function closePreview() {
+    // 关闭预览
+    const modal = document.getElementById('preview-modal');
+    modal.classList.add('opacity-0');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+    
+    // 恢复页面滚动
+    document.body.style.overflow = '';
+    
+    // 清空当前作品
+    currentArtwork = null;
+    currentPages = [];
+}
+
+function prevPage() {
+    // 上一页
+    if (currentPageIndex > 0) {
+        currentPageIndex--;
+        const previewImage = document.getElementById('preview-image');
+        const pageIndicator = document.getElementById('page-indicator');
+        previewImage.src = useProxy(currentPages[currentPageIndex].url);
+        pageIndicator.textContent = `${currentPageIndex + 1} / ${currentPages.length}`;
+    }
+}
+
+function nextPage() {
+    // 下一页
+    if (currentPageIndex < currentPages.length - 1) {
+        currentPageIndex++;
+        const previewImage = document.getElementById('preview-image');
+        const pageIndicator = document.getElementById('page-indicator');
+        previewImage.src = useProxy(currentPages[currentPageIndex].url);
+        pageIndicator.textContent = `${currentPageIndex + 1} / ${currentPages.length}`;
+    }
+}
+
+// ESC键监听关闭预览
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && currentArtwork) {
+        closePreview();
+    }
+});
+
+// 页面加载时获取作品
+window.addEventListener('DOMContentLoaded', () => {
+    initFilterState();
+    loadArtworks(1);
+});
+</script>
+{% endblock %}

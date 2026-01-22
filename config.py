@@ -1,0 +1,108 @@
+"""Flask应用配置."""
+import os
+import tomllib
+from datetime import timedelta
+from pathlib import Path
+from urllib.parse import quote_plus
+
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv(override=False)
+
+
+# 读取pyproject.toml获取GitHub URL
+def _load_github_url() -> str | None:
+    """
+    从pyproject.toml中读取GitHub URL.
+
+    Returns:
+        GitHub URL或None
+    """
+
+    try:
+        pyproject_path = Path(__file__).parent / 'pyproject.toml'
+        if not pyproject_path.exists():
+            return None
+
+        with open(pyproject_path, 'rb') as f:
+            data = tomllib.load(f)
+
+        # 从project.urls中获取Repository URL
+        if 'project' in data and 'urls' in data['project']:
+            return str(data['project']['urls'].get('Repository'))
+
+        return None
+    except Exception:
+        # 如果读取失败，返回None
+        return None
+
+
+GITHUB_URL = _load_github_url()
+
+
+class Config:
+    """基础配置类."""
+
+    # Flask配置
+    SECRET_KEY = os.getenv('FLASK_SECRET_KEY', '')
+
+    # 数据库配置
+    MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+    MYSQL_PORT = os.getenv('MYSQL_PORT', '3306')
+    MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'pixcollector')
+    MYSQL_USER = os.getenv('MYSQL_USER', 'root')
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
+
+    ADMIN_USER = os.getenv('ADMIN_USER', 'user')
+    ADMIN_PWD = os.getenv('ADMIN_PWD', 'password')
+
+    # Pixiv图片代理
+    PIXIV_PROXY_URL = os.getenv('PIXIV_PROXY_URL', 'https://pixiv.iyutek.com')
+
+    # GitHub仓库URL
+    GITHUB_URL = GITHUB_URL
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 3600,
+    }
+
+    SQLALCHEMY_DATABASE_URI = (
+        f"mysql+pymysql://"
+        f"{quote_plus(MYSQL_USER)}:{quote_plus(MYSQL_PASSWORD)}"
+        f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+    )
+
+    # Session配置
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+
+    # 上传配置
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+
+
+class DevelopmentConfig(Config):
+    """开发环境配置."""
+    DEBUG = True
+    TESTING = False
+
+
+class ProductionConfig(Config):
+    """生产环境配置."""
+    DEBUG = False
+    TESTING = False
+
+
+class TestingConfig(Config):
+    """测试环境配置."""
+    TESTING = True
+
+
+# 配置字典
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig
+}

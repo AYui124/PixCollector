@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block title %}系统配置 - PixCollector{% endblock %}
+
+{% block content %}
+<style>
+    .config-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        border: 1px solid #f3f4f6;
+    }
+    
+    .icon-box {
+        border-radius: 9999px;
+        padding: 0.5rem;
+        margin-right: 0.75rem;
+    }
+    
+    .config-input {
+        padding: 0.75rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+        transition: all 0.2s;
+    }
+    
+    .config-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .save-button {
+        width: 100%;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+        border: none;
+    }
+    
+    .save-button:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-0.125rem);
+    }
+    
+    .section-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<div style="margin-bottom: 1.5rem; max-width: 140rem; margin-left: auto; margin-right: auto; padding: 0 1rem;">
+    <!-- 页面标题 -->
+    <div style="margin-bottom: 2rem;">
+        <h1 class="title is-3">系统配置</h1>
+        <p class="subtitle is-6 has-text-grey mt-3">管理系统各项配置参数</p>
+    </div>
+
+    <div class="columns is-multiline">
+        <!-- 左侧配置 -->
+        <div class="column is-12-mobile is-4-desktop" style="margin-bottom: 1.5rem;">
+            <!-- Pixiv Token配置 -->
+            <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="section-title">
+                    <div class="icon-box has-background-blue-light">
+                        <svg class="image is-20x20" style="color: #2563eb;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L10 14H9v1H8v1H7v-4h4v1H8v2h1v1h1l-.343 1.257A6 6 0 0115 17v-2a2 2 0 012-2zM9 9l-3 3 3 3m-3-3h12" />
+                        </svg>
+                    </div>
+                    <h2 class="title is-5 has-text-grey-darker">Pixiv Token配置</h2>
+                </div>
+
+                <div class="mb-5">
+                    <div class="field">
+                        <label for="refresh-token" class="label is-small has-text-weight-medium mb-2">Refresh Token</label>
+                        <input type="password" id="refresh-token" placeholder="输入refresh_token"
+                            class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">必需：用于获取access_token</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="access-token" class="label is-small has-text-weight-medium mb-2">Access Token（可选）</label>
+                        <input type="password" id="access-token" placeholder="输入access_token或留空自动获取"
+                            class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">可选：如果提供则直接使用，否则通过refresh_token获取</p>
+                    </div>
+
+                    <div class="columns is-mobile">
+                        <div class="column">
+                            <button onclick="saveTokens()" class="save-button" style="background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); color: white;">
+                                保存Token
+                            </button>
+                        </div>
+                        <div class="column">
+                            <button onclick="testConnection()" class="save-button" style="background: white; border: 1px solid #d1d5db; color: #374151;">
+                                测试连接
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 采集配置 -->
+            <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="section-title">
+                    <div class="icon-box has-background-success-light">
+                        <svg class="image is-20x20" style="color: #059669;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3 2.286 6.857z" />
+                        </svg>
+                    </div>
+                    <h2 class="title is-5 has-text-grey-darker">采集配置</h2>
+                </div>
+
+                <div class="mb-5">
+                    <div class="field">
+                        <label for="update-interval" class="label is-small has-text-weight-medium mb-2">更新间隔（天）</label>
+                        <input type="number" id="update-interval" min="1" max="365" value="7"
+                            class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">更新间隔多久未同步的作品元数据</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="invalid-action" class="label is-small has-text-weight-medium mb-2">失效作品处理</label>
+                        <div class="select is-fullwidth">
+                            <select id="invalid-action" class="config-input">
+                                <option value="mark">标记为失效</option>
+                                <option value="keep">保留但标记</option>
+                                <option value="delete">删除</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="backtrack-years" class="label is-small has-text-weight-medium mb-2">新用户回采年数</label>
+                        <input type="number" id="backtrack-years" min="0" max="10" value="2"
+                            class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">新关注用户回采多少年的作品</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="log-retention-days" class="label is-small has-text-weight-medium mb-2">日志保留天数</label>
+                        <input type="number" id="log-retention-days" min="1" max="365" value="30"
+                            class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">采集日志保留多少天</p>
+                    </div>
+
+                    <button onclick="saveConfig()" class="save-button" style="background: linear-gradient(90deg, #059669 0%, #047857 100%); color: white;">
+                        保存采集配置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧配置 -->
+        <div class="column is-12-mobile is-8-desktop">
+            <!-- 速率限制配置 -->
+            <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="section-title">
+                    <div class="icon-box has-background-purple-light">
+                        <svg class="image is-20x20" style="color: #9333ea;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="title is-5 has-text-grey-darker">速率限制配置</h2>
+                </div>
+
+                <div class="mb-5">
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">API调用延迟（秒）</label>
+                        <div class="columns is-mobile">
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                <input type="number" id="api-delay-min" step="0.1" value="1.0" placeholder="最小"
+                                    class="input config-input">
+                            </div>
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                <input type="number" id="api-delay-max" step="0.1" value="3.0" placeholder="最大"
+                                    class="input config-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">429错误延迟（秒）</label>
+                        <div class="columns is-mobile">
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                <input type="number" id="error-delay-429-min" step="0.1" value="30.0" placeholder="最小"
+                                    class="input config-input">
+                            </div>
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                <input type="number" id="error-delay-429-max" step="0.1" value="60.0" placeholder="最大"
+                                    class="input config-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">403错误延迟（秒）</label>
+                        <div class="columns is-mobile">
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                <input type="number" id="error-delay-403-min" step="0.1" value="60.0" placeholder="最小"
+                                    class="input config-input">
+                            </div>
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                <input type="number" id="error-delay-403-max" step="0.1" value="120.0" placeholder="最大"
+                                    class="input config-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">其他错误延迟（秒）</label>
+                        <div class="columns is-mobile">
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                <input type="number" id="error-delay-other-min" step="0.1" value="10.0" placeholder="最小"
+                                    class="input config-input">
+                            </div>
+                            <div class="column">
+                                <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                <input type="number" id="error-delay-other-max" step="0.1" value="20.0" placeholder="最大"
+                                    class="input config-input">
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="saveConfig()" class="save-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%); color: white;">
+                        保存速率配置
+                    </button>
+                </div>
+            </div>
+
+            <!-- 定时任务配置 -->
+            <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="section-title">
+                    <div class="icon-box has-background-cyan-light">
+                        <svg class="image is-20x20" style="color: #0891b2;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="title is-5 has-text-grey-darker">定时任务配置</h2>
+                </div>
+
+                <div class="mb-5">
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">排行榜采集</label>
+                        <div class="columns">
+                            <div class="column is-8">
+                                <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
+                                <input type="text" id="artwork_ranking-cron" value="0 0 2 * * *" placeholder="秒 分 时 日 月 周"
+                                    class="input config-input">
+                                <p class="help mt-1 is-small has-text-grey-light">格式：分 时 日 月 周，例如：0 2 * * * （每天凌晨2点）</p>
+                            </div>
+                            <div class="column is-4">
+                                <label class="label is-small has-text-grey-light mb-1">状态</label>
+                                <div class="select is-fullwidth">
+                                    <select id="artwork_ranking-active" class="config-input">
+                                        <option value="true">启用</option>
+                                        <option value="false">禁用</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">同步关注列表</label>
+                        <div class="columns">
+                            <div class="column is-8">
+                                <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
+                                <input type="text" id="follow-sync-cron" value="0 0 6 * * *" placeholder="秒 分 时 日 月 周"
+                                    class="input config-input">
+                                <p class="help mt-1 is-small has-text-grey-light">格式：分 时 日 月 周，例如：0 6 * * * （每天早上6点）</p>
+                            </div>
+                            <div class="column is-4">
+                                <label class="label is-small has-text-grey-light mb-1">状态</label>
+                                <div class="select is-fullwidth">
+                                    <select id="follow-sync-active" class="config-input">
+                                        <option value="true">启用</option>
+                                        <option value="false">禁用</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">采集关注用户新作品</label>
+                        <div class="columns">
+                            <div class="column is-8">
+                                <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
+                                <input type="text" id="follow-works-cron" value="0 */2 * * * *" placeholder="秒 分 时 日 月 周"
+                                    class="input config-input">
+                                <p class="help mt-1 is-small has-text-grey-light">格式：分 时 日 月 周，例如：0 */2 * * * （每2小时）</p>
+                            </div>
+                            <div class="column is-4">
+                                <label class="label is-small has-text-grey-light mb-1">状态</label>
+                                <div class="select is-fullwidth">
+                                    <select id="follow-works-active" class="config-input">
+                                        <option value="true">启用</option>
+                                        <option value="false">禁用</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">更新作品元数据</label>
+                        <div class="columns">
+                            <div class="column is-8">
+                                <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
+                                <input type="text" id="update-works-cron" value="0 0 3 * * *" placeholder="秒 分 时 日 月 周"
+                                    class="input config-input">
+                                <p class="help mt-1 is-small has-text-grey-light">格式：秒 分 时 日 月 周，例如：0 0 3 * * * （每天凌晨3点）</p>
+                            </div>
+                            <div class="column is-4">
+                                <label class="label is-small has-text-grey-light mb-1">状态</label>
+                                <div class="select is-fullwidth">
+                                    <select id="update-works-active" class="config-input">
+                                        <option value="true">启用</option>
+                                        <option value="false">禁用</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label is-small has-text-weight-medium mb-2">清理旧日志</label>
+                        <div class="columns">
+                            <div class="column is-8">
+                                <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
+                                <input type="text" id="cleanup-logs-cron" value="0 0 4 * * *" placeholder="秒 分 时 日 月 周"
+                                    class="input config-input">
+                                <p class="help mt-1 is-small has-text-grey-light">格式：秒 分 时 日 月 周，例如：0 0 4 * * * （每天凌晨4点）</p>
+                            </div>
+                            <div class="column is-4">
+                                <label class="label is-small has-text-grey-light mb-1">状态</label>
+                                <div class="select is-fullwidth">
+                                    <select id="cleanup-logs-active" class="config-input">
+                                        <option value="true">启用</option>
+                                        <option value="false">禁用</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="saveSchedulerConfig()" class="save-button" style="background: linear-gradient(90deg, #0891b2 0%, #0e7490 100%); color: white;">
+                        保存任务配置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadConfig() {
+    try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        if (data.success) {
+            const config = data.config;
+            document.getElementById('update-interval').value = config.update_interval_days || 7;
+            document.getElementById('invalid-action').value = config.invalid_artwork_action || 'mark';
+            document.getElementById('backtrack-years').value = config.new_user_backtrack_years || 2;
+            
+            document.getElementById('api-delay-min').value = config.api_delay_min || 1.0;
+            document.getElementById('api-delay-max').value = config.api_delay_max || 3.0;
+            document.getElementById('error-delay-429-min').value = config.error_delay_429_min || 30.0;
+            document.getElementById('error-delay-429-max').value = config.error_delay_429_max || 60.0;
+            document.getElementById('error-delay-403-min').value = config.error_delay_403_min || 60.0;
+            document.getElementById('error-delay-403-max').value = config.error_delay_403_max || 120.0;
+            document.getElementById('error-delay-other-min').value = config.error_delay_other_min || 10.0;
+            document.getElementById('error-delay-other-max').value = config.error_delay_other_max || 20.0;
+            document.getElementById('log-retention-days').value = config.log_retention_days || 30;
+            document.getElementById('refresh-token').value = config.refresh_token || '';
+            document.getElementById('access-token').value = config.access_token || '';
+        }
+    } catch (error) {
+        console.error('加载配置失败:', error);
+        notify('加载配置失败', 'error');
+    }
+}
+
+async function loadSchedulerConfig() {
+    try {
+        const response = await fetch('/api/config/scheduler');
+        const data = await response.json();
+        if (data.success) {
+            data.configs.forEach(config => {
+                if (config.collect_type === 'ranking_works') {
+                    document.getElementById('artwork_ranking-cron').value = config.crontab_expression;
+                    document.getElementById('artwork_ranking-active').value = config.is_active;
+                } else if (config.collect_type === 'follow_new_follow') {
+                    document.getElementById('follow-sync-cron').value = config.crontab_expression;
+                    document.getElementById('follow-sync-active').value = config.is_active;
+                } else if (config.collect_type === 'follow_new_works') {
+                    document.getElementById('follow-works-cron').value = config.crontab_expression;
+                    document.getElementById('follow-works-active').value = config.is_active;
+                } else if (config.collect_type === 'update_artworks') {
+                    document.getElementById('update-works-cron').value = config.crontab_expression;
+                    document.getElementById('update-works-active').value = config.is_active;
+                } else if (config.collect_type === 'cleanup_logs') {
+                    document.getElementById('cleanup-logs-cron').value = config.crontab_expression;
+                    document.getElementById('cleanup-logs-active').value = config.is_active;
+                }
+            });
+        }
+    } catch (error) {
+        console.error('加载任务配置失败:', error);
+        notify('加载任务配置失败', 'error');
+    }
+}
+
+async function saveTokens() {
+    const refreshToken = document.getElementById('refresh-token').value;
+    const accessToken = document.getElementById('access-token').value;
+
+    if (!refreshToken) {
+        notify('请输入refresh_token', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/config/tokens', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                refresh_token: refreshToken,
+                access_token: accessToken || null
+            })
+        });
+        const data = await response.json();
+        if (data.success) {
+            notify('Token保存成功', 'success');
+        } else {
+            notify('保存失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('保存失败: ' + error.message, 'error');
+    }
+}
+
+async function testConnection() {
+    try {
+        const response = await fetch('/api/config/test', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify('连接测试成功: ' + data.message, 'success');
+        } else {
+            notify('连接测试失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('连接测试失败: ' + error.message, 'error');
+    }
+}
+
+async function saveConfig() {
+    const config = {
+        update_interval_days: parseInt(document.getElementById('update-interval').value),
+        invalid_artwork_action: document.getElementById('invalid-action').value,
+        new_user_backtrack_years: parseInt(document.getElementById('backtrack-years').value),
+        api_delay_min: parseFloat(document.getElementById('api-delay-min').value),
+        api_delay_max: parseFloat(document.getElementById('api-delay-max').value),
+        error_delay_429_min: parseFloat(document.getElementById('error-delay-429-min').value),
+        error_delay_429_max: parseFloat(document.getElementById('error-delay-429-max').value),
+        error_delay_403_min: parseFloat(document.getElementById('error-delay-403-min').value),
+        error_delay_403_max: parseFloat(document.getElementById('error-delay-403-max').value),
+        error_delay_other_min: parseFloat(document.getElementById('error-delay-other-min').value),
+        error_delay_other_max: parseFloat(document.getElementById('error-delay-other-max').value),
+        log_retention_days: parseInt(document.getElementById('log-retention-days').value)
+    };
+
+    try {
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        const data = await response.json();
+        if (data.success) {
+            notify('配置保存成功', 'success');
+        } else {
+            notify('保存失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('保存失败: ' + error.message, 'error');
+    }
+}
+
+async function saveSchedulerConfig() {
+    const config = {
+        ranking_works: {
+            crontab_expression: document.getElementById('artwork_ranking-cron').value,
+            is_active: document.getElementById('artwork_ranking-active').value === 'true'
+        },
+        follow_new_follow: {
+            crontab_expression: document.getElementById('follow-sync-cron').value,
+            is_active: document.getElementById('follow-sync-active').value === 'true'
+        },
+        follow_new_works: {
+            crontab_expression: document.getElementById('follow-works-cron').value,
+            is_active: document.getElementById('follow-works-active').value === 'true'
+        },
+        update_artworks: {
+            crontab_expression: document.getElementById('update-works-cron').value,
+            is_active: document.getElementById('update-works-active').value === 'true'
+        },
+        cleanup_logs: {
+            crontab_expression: document.getElementById('cleanup-logs-cron').value,
+            is_active: document.getElementById('cleanup-logs-active').value === 'true'
+        }
+    };
+
+    try {
+        // 保存配置到数据库
+        const response = await fetch('/api/config/scheduler', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        });
+        const data = await response.json();
+        if (!data.success) {
+            notify('保存失败: ' + data.message, 'error');
+            return;
+        }
+
+        // 刷新调度器任务
+        try {
+            const refreshResponse = await fetch('/api/scheduler/refresh', {
+                method: 'POST'
+            });
+            const refreshData = await refreshResponse.json();
+            if (refreshData.success) {
+                notify('任务配置保存成功，已刷新调度器', 'success');
+            } else {
+                notify('配置已保存但刷新调度器失败: ' + refreshData.message, 'warning');
+            }
+        } catch (refreshError) {
+            notify('配置已保存但刷新调度器失败: ' + refreshError.message, 'warning');
+        }
+    } catch (error) {
+        notify('保存失败: ' + error.message, 'error');
+    }
+}
+
+// 页面加载时获取配置
+loadConfig();
+loadSchedulerConfig();
+</script>
+{% endblock %}

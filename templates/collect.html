@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block title %}采集管理 - PixCollector{% endblock %}
+
+{% block content %}
+<style>
+    .filter-container {
+        background: white;
+        border-radius:1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        border: 1px solid #f3f4f6;
+    }
+    
+    .search-button {
+        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+        border: none;
+    }
+    
+    .search-button:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #1e40af 100%);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-0.125rem);
+    }
+    
+    .reset-button {
+        background: white;
+        border: 1px solid #d1d5db;
+        color: #374151;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .reset-button:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+    }
+    
+    .stats-box {
+        background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        color: white;
+    }
+    
+    .logs-table {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        border: 1px solid #f3f4f6;
+    }
+    
+    .logs-table th {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .logs-table tbody tr {
+        border-bottom: 1px solid #e5e7eb;
+        transition: background 0.15s;
+    }
+    
+    .logs-table tbody tr:hover {
+        background: #f9fafb;
+    }
+    
+    .logs-table td {
+        padding: 1rem 1.5rem;
+        font-size: 0.875rem;
+        color: #4b5563;
+    }
+    
+    .type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .page-button {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+        font-weight: 500;
+    }
+    
+    .page-button:hover {
+        background-color: #f9fafb;
+    }
+    
+    .page-button.active {
+        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        border: none;
+    }
+    /* 分页按钮样式增强 */
+    .button.is-primary {
+        background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%) !important;
+        border-color: #1d4ed8 !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    
+    .button.is-primary:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #1e40af 100%) !important;
+    }
+    
+    .button.is-primary.is-small {
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    
+    .button.is-primary.is-small:hover {
+        background: linear-gradient(90deg, #059669 0%, #047857 100%) !important;
+    }
+</style>
+
+<div style="margin-bottom: 1.5rem;">
+    <!-- 页面标题 -->
+    <div style="margin-bottom: 2rem;">
+        <h1 class="title is-3">采集管理</h1>
+        <p class="subtitle is-6 has-text-grey mt-3">查看和管理采集任务日志</p>
+    </div>
+
+    <!-- 筛选器 -->
+    <div class="filter-container">
+        <div style="padding: 1.5rem;">
+            <div class="columns is-multiline">
+                <div class="column is-12-mobile is-6-tablet is-3-desktop">
+                    <label class="label is-small has-text-weight-medium">日志类型</label>
+                    <div class="select is-fullwidth">
+                        <select id="log-type">
+                            <option value="">全部类型</option>
+                            <option value="ranking_works">排行作品</option>
+                            <option value="follow_new_follow">同步关注</option>
+                            <option value="follow_new_works">关注作品</option>
+                            <option value="update_artworks">更新作品</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="column is-12-mobile is-6-tablet is-3-desktop">
+                    <label class="label is-small has-text-weight-medium">状态</label>
+                    <div class="select is-fullwidth">
+                        <select id="log-status">
+                            <option value="">全部状态</option>
+                            <option value="success">成功</option>
+                            <option value="failed">失败</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="column is-6-tablet is-3-desktop" style="display: flex; align-items: flex-end;">
+                    <button onclick="loadLogs()" class="search-button">
+                        搜索
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="stats-box mt-5">
+        <p class="is-size-7 has-text-grey-light">共找到 <span id="total-count" class="has-text-weight-bold has-text-white is-size-5">-</span> 条日志记录</p>
+    </div>
+
+    <!-- 日志列表 -->
+    <div class="logs-table mt-5">
+        <div style="overflow-x: auto;">
+            <table class="table is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>类型</th>
+                        <th>状态</th>
+                        <th>消息</th>
+                        <th>作品数</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-container">
+                    <!-- 加载状态 -->
+                    <tr>
+                        <td colspan="5" class="has-text-centered" style="padding: 3rem 1.5rem;">
+                            <div style="display: flex; align-items: center; justify-content: center;">
+                                <div class="animate__animated animate__spin" style="width: 3rem; height: 3rem; border: 3px solid #2563eb; border-top-color: transparent; border-radius: 50%;"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 分页 -->
+    <nav class="mt-8" id="pagination">
+        <div class="has-text-centered py-8">
+            <div class="animate__animated animate__spin" style="width: 2rem; height: 2rem; border: 2px solid #9ca3af; border-top-color: transparent; border-radius: 50%; margin: 0 auto;"></div>
+        </div>
+    </nav>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let currentPerPage = 20;
+
+async function loadLogs(page = 1) {
+    const container = document.getElementById('logs-container');
+    const pagination = document.getElementById('pagination');
+    
+    // 显示加载状态
+    container.innerHTML = `
+        <tr>
+            <td colspan="5" class="has-text-centered" style="padding: 3rem 1.5rem;">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <div class="animate__animated animate__spin" style="width: 3rem; height: 3rem; border: 3px solid #2563eb; border-top-color: transparent; border-radius: 50%;"></div>
+                </div>
+            </td>
+        </tr>
+    `;
+    pagination.innerHTML = `
+        <div class="has-text-centered py-8">
+            <div class="animate__animated animate__spin" style="width: 2rem; height: 2rem; border: 2px solid #9ca3af; border-top-color: transparent; border-radius: 50%; margin: 0 auto;"></div>
+        </div>
+    `;
+    
+    const type = document.getElementById('log-type').value;
+    const status = document.getElementById('log-status').value;
+
+    let url = `/api/collect/logs?page=${page}&per_page=${currentPerPage}`;
+    if (type) url += `&type=${type}`;
+    if (status) url += `&status=${status}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            displayLogs(data.logs);
+            document.getElementById('total-count').textContent = data.total;
+            currentPage = page;
+            updatePagination(data.total, data.per_page, page);
+        }
+    } catch (error) {
+        console.error('加载日志失败:', error);
+        notify('加载日志失败', 'error');
+        container.innerHTML = `
+            <tr>
+                <td colspan="5" class="has-text-grey has-text-centered" style="padding: 3rem 1.5rem;">加载失败</td>
+            </tr>
+        `;
+        pagination.innerHTML = '';
+    }
+}
+
+function displayLogs(logs) {
+    const container = document.getElementById('logs-container');
+    
+    if (logs.length === 0) {
+        container.innerHTML = `
+            <tr>
+                <td colspan="5" class="has-text-centered" style="padding: 3rem 1.5rem;">
+                    <div class="has-text-grey-light">
+                        <svg style="width: 4rem; height: 4rem; margin: 0 auto 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="is-size-5 has-text-weight-medium">没有找到日志记录</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const typeMap = {
+        'ranking_works': '排行作品',
+        'follow_new_follow': '同步关注',
+        'follow_new_works': '关注作品',
+        'update_artworks': '更新作品',
+        'follow_user_artworks': '存量作品'
+    };
+
+    const typeColors = {
+        'ranking_works': 'background-color: #dbeafe; color: #1e40af;',
+        'follow_new_follow': 'background-color: #d1fae5; color: #065f46;',
+        'follow_new_works': 'background-color: #cffafe; color: #164e63;',
+        'update_artworks': 'background-color: #fef3c7; color: #92400e;',
+        'follow_user_artworks': 'background-color: #ffedd5; color: #9a3412;'
+    };
+
+    container.innerHTML = logs.map(log => {
+        const statusBadge = log.status === 'success' ? 
+            `<span class="status-badge" style="background-color: #d1fae5; color: #065f46;">
+                <svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                成功
+            </span>` : log.status === 'failed' ?
+            `<span class="status-badge" style="background-color: #fee2e2; color: #991b1b;">
+                <svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                失败
+            </span>` : 
+            `<span class="status-badge" style="background-color: #fee2e2; color: #2563eb;">
+                <svg style="width: 0.75rem; height: 0.75rem; margin-right: 0.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                运行中
+            </span>`
+        
+        const typeClass = typeColors[log.type] || 'background-color: #f3f4f6; color: #374151;';
+        
+        return `
+            <tr style="transition: background 0.15s;">
+                <td style="padding: 1rem 1.5rem; font-size: 0.875rem; color: #4b5563; white-space: nowrap;">${log.created_at}</td>
+                <td style="padding: 1rem 1.5rem; white-space: nowrap;">
+                    <span class="type-badge" style="${typeClass}">
+                        ${typeMap[log.type] || log.type}
+                    </span>
+                </td>
+                <td style="padding: 1rem 1.5rem; white-space: nowrap;">${statusBadge}</td>
+                <td style="padding: 1rem 1.5rem; font-size: 0.875rem; color: #111827; max-width: 20rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.message}</td>
+                <td style="padding: 1rem 1.5rem; font-size: 0.875rem; font-weight: 600; color: #111827; white-space: nowrap;">${log.artworks_count || 0}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updatePagination(total, perPage, currentPage) {
+    const totalPages = Math.ceil(total / perPage);
+    const pagination = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = `
+            <div class="has-text-centered">
+                <div class="select is-small">
+                    <select id="per-page" onchange="changePerPage(this.value)">
+                        <option value="20" ${currentPerPage == 20 ? 'selected' : ''}>20条/页</option>
+                        <option value="50" ${currentPerPage == 50 ? 'selected' : ''}>50条/页</option>
+                        <option value="100" ${currentPerPage == 100 ? 'selected' : ''}>100条/页</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '<div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem;">';
+    
+    // 上一页
+    html += `
+        <button onclick="loadLogs(${currentPage - 1})" 
+                class="button ${currentPage === 1 ? 'is-static' : ''} page-button"
+                ${currentPage === 1 ? 'disabled' : ''}>
+            上一页
+        </button>
+    `;
+    
+    // 页码
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `
+                <button onclick="loadLogs(${i})" 
+                        class="button page-button ${i === currentPage ? 'active' : ''}">
+                    ${i}
+                </button>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += '<button class="button is-static">&hellip;</button>';
+        }
+    }
+    
+    // 下一页
+    html += `
+        <button onclick="loadLogs(${currentPage + 1})" 
+                class="button ${currentPage === totalPages ? 'is-static' : ''} page-button"
+                ${currentPage === totalPages ? 'disabled' : ''}>
+            下一页
+        </button>
+    `;
+    
+    // 页面跳转和每页数量
+    html += `
+        <div class="tags has-addons" style="margin-top: -0.5rem;">
+            <span class="tag" style="margin-top: 0.5rem;">
+                <input type="number" id="jump-page" min="1" max="${totalPages}" placeholder="页码" 
+                       class="input is-small" style="width: 80px;"
+                       onkeypress="if(event.key === 'Enter') jumpToPage()">
+            </span>
+            <button onclick="jumpToPage()" class="button is-primary is-small">
+                跳转
+            </button>
+            <span class="tag is-light">|</span>
+            <div class="select is-small">
+                <select id="per-page" onchange="changePerPage(this.value)">
+                    <option value="20" ${currentPerPage == 20 ? 'selected' : ''}>20条/页</option>
+                    <option value="50" ${currentPerPage == 50 ? 'selected' : ''}>50条/页</option>
+                    <option value="100" ${currentPerPage == 100 ? 'selected' : ''}>100条/页</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    html += '</div>';
+    pagination.innerHTML = html;
+}
+
+function jumpToPage() {
+    const input = document.getElementById('jump-page');
+    const page = parseInt(input.value);
+    const totalPages = Math.ceil(parseInt(document.getElementById('total-count').textContent) / currentPerPage);
+    
+    if (page >= 1 && page <= totalPages) {
+        loadLogs(page);
+    } else {
+        notify(`请输入1-${totalPages}之间的页码`, 'warning');
+        input.value = '';
+    }
+}
+
+function changePerPage(perPage) {
+    currentPerPage = perPage;
+    loadLogs(1);
+}
+
+function resetFilters() {
+    document.getElementById('log-type').value = '';
+    document.getElementById('log-status').value = '';
+    loadLogs(1);
+}
+
+// 页面加载时获取日志
+loadLogs(1);
+</script>
+{% endblock %}
