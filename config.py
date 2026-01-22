@@ -58,7 +58,7 @@ class Config:
     ADMIN_PWD = os.getenv('ADMIN_PWD', 'password')
 
     # Pixiv图片代理
-    PIXIV_PROXY_URL = os.getenv('PIXIV_PROXY_URL', 'https://pixiv.iyutek.com')
+    PIXIV_PROXY_URL = os.getenv('PIXIV_PROXY_URL', 'https://i.pixiv.re')
 
     # GitHub仓库URL
     GITHUB_URL = GITHUB_URL
@@ -74,12 +74,6 @@ class Config:
         f"{quote_plus(MYSQL_USER)}:{quote_plus(MYSQL_PASSWORD)}"
         f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
     )
-
-    # Session配置
-    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
-
-    # 上传配置
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
 
 class DevelopmentConfig(Config):

@@ -85,6 +85,12 @@
         color: #065f46;
         border-color: #a7f3d0;
     }
+
+    .log-item.is-running {
+        background-color: #c1e4f3;
+        color: #0975f9;
+        border-color: #c1e4e0;
+    }
     
     .log-item.is-failed {
         background-color: #fee2e2;
@@ -417,8 +423,8 @@ async function loadRecentLogs() {
         const data = await response.json();
         if (data.success) {
             const logsHtml = data.recent_logs.map(log => {
-                const statusClass = log.status === 'success' ? 'is-success' : 'is-failed';
-                const icon = log.status === 'success' ? '✓' : '✕';
+                const statusClass = log.status === 'success' ? 'is-success' : log.status === 'running' ? 'is-running' : 'is-failed';
+                const icon = log.status === 'success' ? '✓' : log.status === 'running' ? 'O' : '✕';
                 
                 return `
                     <div class="log-item ${statusClass}">
