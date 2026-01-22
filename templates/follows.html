@@ -253,7 +253,7 @@
                                 </button>
                             </p>
                         </div>
-                        <button style="margin-bottom: .75rem;" onclick="loadFollows()" class="refresh-button">
+                        <button style="margin-bottom: .75rem;" onclick="loadFollows(1, true)" class="refresh-button">
                             刷新
                         </button>
                     </div>
@@ -361,7 +361,7 @@ async function loadStats() {
     }
 }
 
-async function loadFollows(page = 1, clear = true) {
+async function loadFollows(page = 1, clear = false) {
     if (clear) {
         currentSearchTerm = '';
         document.getElementById('search-input').value = currentSearchTerm;
