@@ -1,0 +1,107 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pixcollector"
+version = "1.0.0"
+description = "Artwork collection system"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [
+    {name = "PixCollector Team", email = "raidmelk022@gmail.com"}
+]
+keywords = ["pixiv", "artwork", "collection", "flask", "web"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Flask",
+    "Topic :: Internet :: WWW/HTTP",
+]
+
+dependencies = [
+    "Flask>=3.0.0",
+    "Flask-Login>=0.6.0",
+    "Flask-SQLAlchemy>=3.1.0",
+    "pixivpy3>=3.7.0",
+    "python-dotenv>=1.0.0",
+    "APScheduler>=3.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/AYui124/PixCollector"
+Documentation = "https://github.com/AYui124/PixCollector#readme"
+Repository = "https://github.com/AYui124/PixCollector"
+Issues = "https://github.com/AYui124/PixCollector/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pixcollector*"]
+
+[tool.black]
+line-length = 79
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+# 禁用宽泛Exception捕获警告
+disable_error_code = ["trycast-strict"]
+# 忽略stub文件相关警告
+no_warn_return_any = false
+check_untyped_defs = true
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+
+[tool.ruff.lint]
+# 禁用lazy %格式化警告
+ignore = ["UP032", "SIM108"]
+# 启用的规则集
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

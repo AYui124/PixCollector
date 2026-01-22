@@ -1,0 +1,575 @@
+{% extends "base.html" %}
+
+{% block title %}公开首页 - PixCollector{% endblock %}
+
+{% block content %}
+<style>
+    .stats-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        padding: 1.5rem;
+        border: 1px solid #f3f4f6;
+        transition: box-shadow 0.3s;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 8rem;
+    }
+    
+    .stats-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .stats-icon {
+        border-radius: 9999px;
+        padding: 0.75rem;
+    }
+    
+    .chart-container {
+        background: #f9fafb;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid #f3f4f6;
+    }
+    
+    .code-block {
+        background: #1f2937;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+    }
+    
+    .code-block code {
+        background: transparent;
+        color: inherit;
+    }
+    
+    .code-green {
+        color: #86efac;
+    }
+    
+    .code-blue {
+        color: #93c5fd;
+    }
+    
+    .code-gray {
+        color: #ffffff;
+    }
+    
+    .api-table th {
+        background-color: #f9fafb;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #374151;
+    }
+    
+    .test-button {
+        background: transparent;
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        padding: 0.75rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+    }
+    
+    .test-button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-0.125rem);
+    }
+    
+    .param-code {
+        background: #dbeafe;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        color: #1d4ed8;
+    }
+</style>
+
+<div style="margin-bottom: 2rem;">
+    <!-- 欢迎区域 -->
+    <div class="has-text-centered" style="margin-top: 3rem; margin-bottom: 2rem;">
+        <p class="title is-4 has-text-grey">Pixiv图片采集与随机API服务</p>
+    </div>
+
+    <!-- 统计数据卡片 -->
+    <div class="columns is-multiline" id="stats-container">
+        <!-- 总作品数 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-6 has-text-weight-medium has-text-grey-light">总作品数</p>
+                            <p class="is-size-3 has-text-weight-bold has-text-grey-darker mt-4" id="total-artworks">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-info-light">
+                            <svg class="image is-32x32" style="color: #cfd5db;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- R18作品数 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-6 has-text-weight-medium has-text-grey-light">R18作品</p>
+                            <p class="is-size-3 has-text-weight-bold has-text-danger mt-4" id="r18-artworks">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-danger-light">
+                            <svg class="image is-32x32" style="color: #dc2626;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5 V19 C4 20.105 4.895 21 6 21 H18 C19.105 21 20 20.105 20 19 V5 C20 3.895 19.105 3 18 3 H6 C4.895 3 4 3.895 4 5 Z M12 8 V12 M12 16 H12.01" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 非R18作品数 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-6 has-text-weight-medium has-text-grey-light">非R18作品</p>
+                            <p class="is-size-3 has-text-weight-bold has-text-success mt-4" id="non-r18-artworks">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-success-light">
+                            <svg class="image is-32x32" style="color: #059669;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最后采集时间 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-6 has-text-weight-medium has-text-grey-light">最后采集时间</p>
+                            <p class="is-size-6 has-text-weight-bold has-text-grey-darker mt-4" id="last-collect-time">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-warning-light">
+                            <svg class="image is-32x32" style="color: #dfdacb;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图表展示区域 -->
+    <div class="box" style="border-radius: 1rem; padding: 2rem;">
+        <div class="level">
+            <div class="level-left">
+                <h2 class="title is-3">数据可视化</h2>
+            </div>
+            <div class="level-right">
+                <svg class="image is-24x24" style="color: #2563eb;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="columns is-multiline">
+            <!-- R18占比饼图 -->
+            <div class="column is-6">
+                <div class="chart-container">
+                    <h3 class="title is-6 mb-4">R18占比分布</h3>
+                    <div style="position: relative; height: 16rem;">
+                        <canvas id="r18Chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- 最近7天采集趋势折线图 -->
+            <div class="column is-6">
+                <div class="chart-container">
+                    <h3 class="title is-6 mb-4">最近7天采集趋势</h3>
+                    <div style="position: relative; height: 16rem;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API说明区域 -->
+    <div class="box" style="border-radius: 1rem; padding: 2rem;">
+        <div class="level">
+            <div class="level-left">
+                <h2 class="title is-3">随机图片API文档</h2>
+            </div>
+            <div class="level-right">
+                <svg class="image is-24x24" style="color: #2563eb;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4-4M4 4v10l4-4m-6-10l-4 4m4 4v10l4-4" />
+                </svg>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <!-- 接口地址 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 class="title is-5 mb-2">接口地址</h3>
+                <div class="code-block code-green">
+                    <code>GET /api/random/artwork</code>
+                </div>
+            </div>
+
+            <!-- 参数说明 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 class="title is-5 mb-3">请求参数</h3>
+                <div class="table-container">
+                    <table class="table is-fullwidth is-striped api-table">
+                        <thead>
+                            <tr>
+                                <th>参数名</th>
+                                <th>类型</th>
+                                <th>必填</th>
+                                <th>默认值</th>
+                                <th>说明</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="param-code">limit</span></td>
+                                <td>integer</td>
+                                <td>否</td>
+                                <td>1</td>
+                                <td>返回数量（1-10）</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-code">tags</span></td>
+                                <td>string</td>
+                                <td>否</td>
+                                <td>空</td>
+                                <td>标签过滤，多个标签用逗号分隔</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-code">tags_match</span></td>
+                                <td>string</td>
+                                <td>否</td>
+                                <td>or</td>
+                                <td>标签匹配方式：and（所有标签）或 or（任一标签）</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-code">is_r18</span></td>
+                                <td>string</td>
+                                <td>否</td>
+                                <td>all</td>
+                                <td>R18过滤：true（只R18）、false（只非R18）、all（全部）</td>
+                            </tr>
+                            <tr>
+                                <td><span class="param-code">type</span></td>
+                                <td>string</td>
+                                <td>否</td>
+                                <td>illust</td>
+                                <td>作品类型：illust（插画）、manga（漫画）、ugoira（动画）</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 返回格式 -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 class="title is-5 mb-3">返回格式</h3>
+                <div class="code-block code-gray" style="white-space: pre-wrap;padding: 0 1rem;">
+                    <code>
+{
+  "success": true,
+  "count": 2,
+  "artworks": [
+    {
+      'illust_id': '121607103',
+      'title': '雌小鬼兔糖糖',
+      'author_id': '9631509',
+      'author_name': 'YogurtWZI',
+      'url': 'https://i.pixiv.re/c/600x1200_90/img-master/img/2024/08/18/15/57/58/121607103_p0_master1200.jpg',
+      'share': 'https://www.pixiv.net/artworks/121607103',
+      'page': '1/1',
+      'total_bookmarks': 13967,
+      'total_view': 56412,
+      'tags': ["オリキャラ", "OC", "ソックス足裏", "白タイツ", "魅惑のふともも", "兔糖糖", "女の子", "メスガキ", "オリジナル10000users入り", "タイツ越しのパンツ"],
+      'type': 'illust',
+    }
+  ]
+}</code>
+                </div>
+            </div>
+
+            <!-- 使用示例 -->
+            <div>
+                <h3 class="title is-5 mb-3">使用示例</h3>
+                
+                <!-- 示例1：获取单张随机图片 -->
+                <div style="margin-bottom: 1rem;">
+                    <p class="has-text-weight-medium has-text-grey-dark mb-2">1. 获取单张随机图片</p>
+                    <div class="code-block code-blue">
+                        <code>GET /api/random/artwork</code>
+                    </div>
+                </div>
+
+                <!-- 示例2：获取多张随机图片 -->
+                <div style="margin-bottom: 1rem;">
+                    <p class="has-text-weight-medium has-text-grey-dark mb-2">2. 获取10张随机图片</p>
+                    <div class="code-block code-blue">
+                        <code>GET /api/random/artwork?limit=10</code>
+                    </div>
+                </div>
+
+                <!-- 示例3：按标签过滤 -->
+                <div style="margin-bottom: 1rem;">
+                    <p class="has-text-weight-medium has-text-grey-dark mb-2">3. 按标签过滤（任一标签）</p>
+                    <div class="code-block code-blue">
+                        <code>GET /api/random/artwork?tags=原神,兽耳&tags_match=or</code>
+                    </div>
+                </div>
+
+                <!-- 示例4：按标签过滤（所有标签） -->
+                <div style="margin-bottom: 1rem;">
+                    <p class="has-text-weight-medium has-text-grey-dark mb-2">4. 按标签过滤（所有标签）</p>
+                    <div class="code-block code-blue">
+                        <code>GET /api/random/artwork?tags=原神,兽耳&tags_match=and</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 测试区域 -->
+    <div style="background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); padding: 2rem; color: white;">
+        <h2 class="title is-4 mb-4">立即测试API</h2>
+        <p style="color: #dbeafe; margin-bottom: 1.5rem;">点击下方按钮，获取一张随机图片</p>
+        <button onclick="testRandomAPI()" class="test-button">
+            获取随机图片
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let r18Chart = null;
+let trendChart = null;
+
+// 格式化时间为2行显示
+function formatDateTimeTwoLines(dateTimeStr) {
+    if (!dateTimeStr || dateTimeStr === '暂无数据') {
+        return dateTimeStr;
+    }
+    
+    // 分割日期和时间部分
+    const parts = dateTimeStr.split(' ');
+    if (parts.length >= 2) {
+        const datePart = parts[0]; // 年月日
+        const timePart = parts[1]; // 时分秒
+        return `${datePart}<br>${timePart}`;
+    }
+    return dateTimeStr;
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/public/stats');
+        const data = await response.json();
+        if (data.success) {
+            // 更新统计卡片
+            document.getElementById('total-artworks').textContent = data.stats.total_artworks;
+            document.getElementById('r18-artworks').textContent = data.stats.r18_artworks;
+            document.getElementById('non-r18-artworks').textContent = data.stats.non_r18_artworks;
+            document.getElementById('last-collect-time').innerHTML = formatDateTimeTwoLines(data.stats.last_collect_time || '暂无数据');
+            
+            // 渲染图表
+            renderCharts(data.charts);
+        }
+    } catch (error) {
+        console.error('加载统计信息失败:', error);
+        notify('加载统计信息失败', 'error');
+    }
+}
+
+function renderCharts(chartsData) {
+    // 渲染R18占比饼图
+    renderR18Chart(chartsData.r18_distribution);
+    
+    // 渲染7天采集趋势折线图
+    renderTrendChart(chartsData.daily_trend);
+}
+
+function renderR18Chart(data) {
+    const ctx = document.getElementById('r18Chart').getContext('2d');
+    
+    // 销毁已存在的图表
+    if (r18Chart) {
+        r18Chart.destroy();
+    }
+    
+    r18Chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['R18', '非R18'],
+            datasets: [{
+                data: [data.r18, data.non_r18],
+                backgroundColor: [
+                    '#ec4899', // pink-500
+                    '#8b5cf6'  // violet-500
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = data.r18 + data.non_r18;
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderTrendChart(data) {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    
+    // 销毁已存在的图表
+    if (trendChart) {
+        trendChart.destroy();
+    }
+    
+    const labels = data.map(item => item.date);
+    const values = data.map(item => item.count);
+    
+    trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '采集数量',
+                data: values,
+                borderColor: '#3b82f6', // blue-500
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `采集数量: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: '#e5e7eb'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function testRandomAPI() {
+    notify('正在获取随机图片...', 'info');
+    try {
+        const response = await fetch('/api/random/artwork');
+        const data = await response.json();
+        if (data.success && data.artworks && data.artworks.length > 0) {
+            const artwork = data.artworks[0];
+            notify(`成功获取：${artwork.title}`, 'success');
+            // 打开图片
+            window.open(artwork.url, '_blank');
+        } else {
+            notify('未找到符合条件的作品', 'warning');
+        }
+    } catch (error) {
+        console.error('获取随机图片失败:', error);
+        notify('获取失败: ' + error.message, 'error');
+    }
+}
+
+// 页面加载时获取统计数据
+loadStats();
+</script>
+{% endblock %}

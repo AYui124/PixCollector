@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}服务器错误 - PixCollector{% endblock %}
+
+{% block content %}
+<style>
+    .error-container {
+        min-height: calc(100vh - 16rem);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+    }
+    
+    .error-card {
+        max-width: 28rem;
+        width: 100%;
+        text-align: center;
+    }
+    
+    .icon-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 8rem;
+        height: 8rem;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, #fecaca 0%, #fed7aa 100%);
+        margin: 0 auto;
+    }
+    
+    .home-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        background: linear-gradient(90deg, #2563eb 0%, #9333ea 100%);
+        color: white;
+        font-weight: 700;
+        padding: 1rem 1.5rem;
+        border-radius: 1rem;
+        font-size: 1.125rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+        border: none;
+    }
+    
+    .home-button:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #7c3aed 100%);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-0.25rem);
+    }
+    
+    .refresh-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        background: white;
+        border: 2px solid #d1d5db;
+        color: #374151;
+        font-weight: 700;
+        padding: 1rem 1.5rem;
+        border-radius: 1rem;
+        font-size: 1.125rem;
+        transition: all 0.2s;
+    }
+    
+    .refresh-button:hover {
+        border-color: #9ca3af;
+        background: #f9fafb;
+    }
+    
+    .info-box {
+        background: #ffedd5;
+        border: 1px solid #fed7aa;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: left;
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-card">
+        <!-- 500图标 -->
+        <div class="icon-circle mb-8">
+            <svg style="width: 5rem; height: 5rem; color: #dc2626;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+
+        <!-- 标题和描述 -->
+        <div style="margin-bottom: 2rem;">
+            <h1 class="is-size-1 has-text-weight-bold has-text-grey-darker">500</h1>
+            <h2 class="is-size-2 has-text-weight-bold has-text-grey-dark mb-4">服务器内部错误</h2>
+            <p class="has-text-grey">
+                抱歉，服务器遇到了一些问题，无法完成您的请求。
+            </p>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="margin-bottom: 2rem;">
+            <a href="/" class="home-button mb-4">
+                <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                返回首页
+            </a>
+            
+            <button onclick="location.reload()" class="refresh-button">
+                <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                刷新页面
+            </button>
+        </div>
+
+        <!-- 提示信息 -->
+        <div class="info-box">
+            <div style="display: flex; align-items: flex-start;">
+                <svg style="width: 1.5rem; height: 1.5rem; color: #ea580c; margin-right: 0.75rem; margin-top: 0.125rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div style="flex: 1;">
+                    <h3 class="has-text-weight-bold has-text-orange-900 mb-2">建议操作</h3>
+                    <ul class="is-small has-text-orange-800" style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 0.25rem;">• 稍后重试您的操作</li>
+                        <li style="margin-bottom: 0.25rem;">• 清除浏览器缓存后重试</li>
+                        <li>• 如果问题持续，请联系管理员</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

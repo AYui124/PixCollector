@@ -1,0 +1,592 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - PixCollector{% endblock %}
+
+{% block content %}
+<style>
+    .stats-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        padding: 1.5rem;
+        border: 1px solid #f3f4f6;
+        transition: box-shadow 0.3s;
+    }
+    
+    .stats-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .stats-icon {
+        border-radius: 9999px;
+        padding: 0.75rem;
+    }
+    
+    .progress-bar {
+        height: 0.5rem;
+        background-color: #e5e7eb;
+        border-radius: 9999px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        border-radius: 9999px;
+    }
+    
+    .action-button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 0.75rem;
+        font-weight: 500;
+        font-size: 1rem;
+        color: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+        margin-bottom: 0.45rem;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-0.125rem);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .action-button svg {
+        margin-right: 0.5rem;
+        transition: transform 0.2s;
+    }
+    
+    .action-button:hover svg {
+        transform: scale(1.1);
+    }
+    
+    .log-item {
+        padding: 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid;
+        transition: all 0.2s;
+        margin-bottom: 1rem;
+    }
+    
+    .log-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .log-item:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .log-item.is-success {
+        background-color: #d1fae5;
+        color: #065f46;
+        border-color: #a7f3d0;
+    }
+    
+    .log-item.is-failed {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border-color: #fecaca;
+    }
+    
+    .log-icon {
+        font-size: 1.5rem;
+        margin-right: 0.75rem;
+    }
+    
+    .log-message {
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .log-time {
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        opacity: 0.75;
+    }
+    
+    .today-stats {
+        background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        color: white;
+    }
+    
+    .today-stat-box {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .today-stat-label {
+        font-size: 0.875rem;
+        color: #d1d5db;
+        margin-bottom: 0.5rem;
+    }
+    
+    .today-stat-value {
+        font-size: 2.25rem;
+        font-weight: bold;
+    }
+    
+    .today-stat-info {
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+        margin-top: 1rem;
+    }
+    
+    .today-stat-info svg {
+        width: 1rem;
+        height: 1rem;
+        margin-right: 0.25rem;
+    }
+</style>
+
+<div style="margin-bottom: 2rem; max-width: 120rem; margin-left: auto; margin-right: auto; padding: 0 1rem;">
+    <!-- 页面标题 -->
+    <div style="margin-bottom: 2rem;">
+        <h1 class="title is-3">系统概览</h1>
+        <p class="subtitle is-6 has-text-grey" style="margin-top: 1rem;">实时监控系统运行状态和数据统计</p>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="columns is-multiline" id="stats">
+        <!-- 总作品数 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-7 has-text-weight-medium has-text-grey-light">总作品数</p>
+                            <p class="is-size-3 has-text-weight-bold has-text-grey-darker mt-3" id="total-artworks">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-white-ter">
+                            <svg class="image is-32x32" style="color: #2563eb;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-bar mt-5">
+                    <div class="progress-fill" style="background-color: #2563eb; width: 75%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 有效作品 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-7 has-text-weight-medium has-text-grey-light">有效作品</p>
+                            <p class="is-size-3 has-text-weight-bold has-text-success mt-3" id="valid-artworks">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-success-light">
+                            <svg class="image is-32x32" style="color: #059669;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-bar mt-5">
+                    <div class="progress-fill" style="background-color: #059669; width: 85%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关注用户 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-7 has-text-weight-medium has-text-grey-light">关注用户</p>
+                            <p class="is-size-3 has-text-weight-bold has-text-indigo mt-3" id="total-follows">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-link-light">
+                            <svg class="image is-32x32" style="color: #4f46e5;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-bar mt-5">
+                    <div class="progress-fill" style="background-color: #4f46e5; width: 60%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 活跃用户 -->
+        <div class="column is-12-mobile is-6-tablet is-3-desktop">
+            <div class="stats-card">
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div>
+                            <p class="is-size-7 has-text-weight-medium has-text-grey-light">活跃用户</p>
+                            <p class="is-size-3 has-text-weight-bold has-text-cyan mt-3" id="active-follows">-</p>
+                        </div>
+                    </div>
+                    <div class="level-right">
+                        <div class="stats-icon has-background-info-light">
+                            <svg class="image is-32x32" style="color: #0891b2;" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20a8 8 0 0116 0" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress-bar mt-5">
+                    <div class="progress-fill" style="background-color: #0891b2; width: 45%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作和日志 -->
+    <div class="columns is-multiline" style="margin-top: 2rem;">
+        <!-- 快速操作 -->
+        <div class="column is-12-tablet is-half-desktop">
+        <div class="box" style="border-radius: 1rem; min-height: 35rem;">
+                <div class="level">
+                    <div class="level-left">
+                        <h2 class="title is-5">快速操作</h2>
+                    </div>
+                    <div class="level-right">
+                        <svg class="image is-24x24" style="color: #9ca3af;" fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5v14l11-7-11-7z" />
+                        </svg>
+                    </div>
+                </div>
+                
+                <button onclick="collectDaily()" class="action-button" style="background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3 2.286 6.857z" />
+                    </svg>
+                    采集每日排行
+                </button>
+
+                <button onclick="collectWeekly()" class="action-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3 2.286 6.857z" />
+                    </svg>
+                    采集每周排行
+                </button>
+
+                <button onclick="collectMonthly()" class="action-button" style="background: linear-gradient(90deg, #e11d48 0%, #be123c 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3 2.286 6.857z" />
+                    </svg>
+                    采集每月排行
+                </button>
+                
+                <button onclick="syncFollows()" class="action-button" style="background: linear-gradient(90deg, #059669 0%, #047857 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    同步关注列表
+                </button>
+                
+                <button onclick="collectFollowNewWorks()" class="action-button" style="background: linear-gradient(90deg, #ea580c 0%, #c2410c 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    采集最新作品
+                </button>
+                
+                <button onclick="collectFollowUserArtworks()" class="action-button" style="background: linear-gradient(90deg, #0891b2 0%, #0e7490 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    初始全量关注采集
+                </button>
+                
+                <button onclick="updateArtworks()" class="action-button" style="background: linear-gradient(90deg, #e2d528 0%, #f8e80e 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    更新作品元数据
+                </button>
+
+                <button onclick="cleanUpLogs()" class="action-button" style="background: linear-gradient(90deg, #4d5cdd 0%, #8f0df3 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    清理采集日志
+                </button>
+            </div>
+        </div>
+
+        <!-- 最新日志 -->
+        <div class="column is-12-tablet is-half-desktop">
+            <div class="box" style="border-radius: 1rem; min-height: 35rem;">
+                <div class="level">
+                    <div class="level-left">
+                        <h2 class="title is-5">最新采集日志</h2>
+                    </div>
+                    <div class="level-right">
+                        <svg class="image is-24x24" style="color: #9ca3af;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                </div>
+                <div id="recent-logs" style="max-height: 31.2rem; overflow-y: auto;">
+                    <div class="has-text-centered py-8">
+                        <div class="animate__animated animate__spin" style="width: 2rem; height: 2rem; border: 3px solid #2563eb; border-top-color: transparent; border-radius: 50%; margin: 0 auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 今日统计 -->
+    <div class="today-stats">
+        <h2 class="title is-4 mb-6">
+            <svg style="width: 1.5rem; height: 1.5rem; margin-right: 0.5rem; display: inline-block;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            今日采集统计
+        </h2>
+        <div class="columns">
+            <div class="column is-6">
+                <div class="today-stat-box">
+                    <p class="today-stat-label">今日采集作品</p>
+                    <p class="today-stat-value" id="today-artworks">-</p>
+                    <div class="today-stat-info has-text-success">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 0113.657-5.657M18 4v4h-4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12a8 8 0 01-13.657 5.657M6 20v-4h4" />
+                        </svg>
+                        实时更新
+                    </div>
+                </div>
+            </div>
+            <div class="column is-6">
+                <div class="today-stat-box">
+                    <p class="today-stat-label">今日更新作品</p>
+                    <p class="today-stat-value" id="today-updates">-</p>
+                    <div class="today-stat-info has-text-info">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v16l16-16-16 16M20 4v16" />
+                        </svg>
+                        元数据更新
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById('total-artworks').textContent = data.stats.total_artworks;
+            document.getElementById('valid-artworks').textContent = data.stats.valid_artworks;
+            document.getElementById('total-follows').textContent = data.stats.total_follows;
+            document.getElementById('active-follows').textContent = data.stats.active_follows;
+            document.getElementById('today-artworks').textContent = data.stats.today_artworks;
+            document.getElementById('today-updates').textContent = data.stats.today_updates;
+        }
+    } catch (error) {
+        console.error('加载统计信息失败:', error);
+        notify('加载统计信息失败', 'error');
+    }
+}
+
+async function loadRecentLogs() {
+    try {
+        const response = await fetch('/api/collect/status');
+        const data = await response.json();
+        if (data.success) {
+            const logsHtml = data.recent_logs.map(log => {
+                const statusClass = log.status === 'success' ? 'is-success' : 'is-failed';
+                const icon = log.status === 'success' ? '✓' : '✕';
+                
+                return `
+                    <div class="log-item ${statusClass}">
+                        <div style="display: flex; align-items: flex-start;">
+                            <span class="log-icon">${icon}</span>
+                            <div style="flex: 1;">
+                                <p class="log-message">${log.message}</p>
+                                <p class="log-time">${log.created_at}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('recent-logs').innerHTML = logsHtml || '<p class="has-text-grey has-text-centered py-8">暂无日志记录</p>';
+        }
+    } catch (error) {
+        console.error('加载日志失败:', error);
+        notify('加载日志失败', 'error');
+        document.getElementById('recent-logs').innerHTML = '<p class="has-text-danger has-text-centered py-8">加载失败</p>';
+    }
+}
+
+async function collectDaily() {
+    notify('开始采集每日排行...', 'info');
+    try {
+        const response = await fetch('/api/collect/daily', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify(`采集完成，共${data.count}个作品`, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '采集失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+async function collectWeekly() {
+    notify('开始采集每周排行...', 'info');
+    try {
+        const response = await fetch('/api/collect/weekly', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify(`采集完成，共${data.count}个作品`, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '采集失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+async function collectMonthly() {
+    notify('开始采集每月排行...', 'info');
+    try {
+        const response = await fetch('/api/collect/monthly', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify(`采集完成，共${data.count}个作品`, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '采集失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+async function syncFollows() {
+    notify('开始同步关注列表...', 'info');
+    try {
+        const response = await fetch('/api/collect/sync-follows', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify(`同步完成，新增${data.new_follows}个关注`, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '同步失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+async function collectFollowNewWorks() {
+    notify('开始采集最新作品...', 'info');
+    try {
+        const response = await fetch('/api/collect/follow-new-works', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            let message = `采集完成，共${data.total_new}个新作品`;
+            if (data.new_users > 0) {
+                message += `，发现${data.new_users}个新用户`;
+            }
+            if (data.backlogged_artworks > 0) {
+                message += `，补充${data.backlogged_artworks}个历史作品`;
+            }
+            notify(message, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '采集失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+async function collectFollowUserArtworks() {
+    notify('开始初始全量关注采集...', 'info');
+    try {
+        const response = await fetch('/api/collect/follow-user-artworks', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify(`采集完成，共${data.total_new}个作品，处理${data.total_processed}个用户`, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '采集失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+async function updateArtworks() {
+    notify('开始更新作品元数据...', 'info');
+    try {
+        const response = await fetch('/api/collect/update-artworks', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify(`更新完成，成功${data.successed}个`, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '更新失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+async function cleanUpLogs() {
+    notify('开始清理日志...', 'info');
+    try {
+        const response = await fetch('/api/collect/cleanup-logs', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            notify(`清理完成，成功${data.deleted_count}个`, 'success');
+            loadStats();
+            loadRecentLogs();
+        } else {
+            notify(data.message || '清理失败', 'error');
+        }
+    } catch (error) {
+        notify('操作失败: ' + error.message, 'error');
+    }
+}
+
+// 页面加载时获取数据
+loadStats();
+loadRecentLogs();
+</script>
+{% endblock %}
