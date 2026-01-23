@@ -1,7 +1,6 @@
 """Flask应用配置."""
 import os
 import tomllib
-from datetime import timedelta
 from pathlib import Path
 from urllib.parse import quote_plus
 
@@ -42,10 +41,11 @@ GITHUB_URL = _load_github_url()
 
 
 class Config:
-    """基础配置类."""
+    """应用配置类."""
 
     # Flask配置
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', '')
+    DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
     # 数据库配置
     MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
@@ -74,29 +74,3 @@ class Config:
         f"{quote_plus(MYSQL_USER)}:{quote_plus(MYSQL_PASSWORD)}"
         f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
     )
-
-
-class DevelopmentConfig(Config):
-    """开发环境配置."""
-    DEBUG = True
-    TESTING = False
-
-
-class ProductionConfig(Config):
-    """生产环境配置."""
-    DEBUG = False
-    TESTING = False
-
-
-class TestingConfig(Config):
-    """测试环境配置."""
-    TESTING = True
-
-
-# 配置字典
-config = {
-    'development': DevelopmentConfig,
-    'production': ProductionConfig,
-    'testing': TestingConfig,
-    'default': DevelopmentConfig
-}

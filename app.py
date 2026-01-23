@@ -5,19 +5,14 @@ from flask import Flask, redirect, render_template, url_for
 
 from api import api
 from auth import login_manager
-from config import config
+from config import Config
 from database import db, init_db
 from web import web
 
 
-def create_app(
-    config_name: str = 'default'
-) -> Flask:
+def create_app() -> Flask:
     """
     创建并配置Flask应用.
-
-    Args:
-        config_name: 配置名称
 
     Returns:
         Flask应用实例
@@ -26,7 +21,7 @@ def create_app(
     app = Flask(__name__)
 
     # 加载配置
-    app.config.from_object(config[config_name])
+    app.config.from_object(Config)
 
     # 初始化日志
     setup_logging(app)
