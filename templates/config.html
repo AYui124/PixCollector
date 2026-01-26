@@ -337,14 +337,14 @@
                         <div class="columns">
                             <div class="column is-8">
                                 <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
-                                <input type="text" id="cleanup-logs-cron" value="0 0 4 * * *" placeholder="秒 分 时 日 月 周"
+                                <input type="text" id="clean-up-logs-cron" value="0 0 4 * * *" placeholder="秒 分 时 日 月 周"
                                     class="input config-input">
                                 <p class="help mt-1 is-small has-text-grey-light">格式：秒 分 时 日 月 周，例如：0 0 4 * * * （每天凌晨4点）</p>
                             </div>
                             <div class="column is-4">
                                 <label class="label is-small has-text-grey-light mb-1">状态</label>
                                 <div class="select is-fullwidth">
-                                    <select id="cleanup-logs-active" class="config-input">
+                                    <select id="clean-up-logs-active" class="config-input">
                                         <option value="true">启用</option>
                                         <option value="false">禁用</option>
                                     </select>
@@ -411,9 +411,9 @@ async function loadSchedulerConfig() {
                 } else if (config.collect_type === 'update_artworks') {
                     document.getElementById('update-works-cron').value = config.crontab_expression;
                     document.getElementById('update-works-active').value = config.is_active;
-                } else if (config.collect_type === 'cleanup_logs') {
-                    document.getElementById('cleanup-logs-cron').value = config.crontab_expression;
-                    document.getElementById('cleanup-logs-active').value = config.is_active;
+                } else if (config.collect_type === 'clean_up_logs') {
+                    document.getElementById('clean-up-logs-cron').value = config.crontab_expression;
+                    document.getElementById('clean-up-logs-active').value = config.is_active;
                 }
             });
         }
@@ -517,9 +517,9 @@ async function saveSchedulerConfig() {
             crontab_expression: document.getElementById('update-works-cron').value,
             is_active: document.getElementById('update-works-active').value === 'true'
         },
-        cleanup_logs: {
-            crontab_expression: document.getElementById('cleanup-logs-cron').value,
-            is_active: document.getElementById('cleanup-logs-active').value === 'true'
+        clean_up_logs: {
+            crontab_expression: document.getElementById('clean-up-logs-cron').value,
+            is_active: document.getElementById('clean-up-logs-active').value === 'true'
         }
     };
 

@@ -87,7 +87,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 # 禁用lazy %格式化警告
-ignore = ["UP032", "SIM108"]
+ignore = ["UP032", "UP046", "SIM108"]
 # 启用的规则集
 select = [
     "E",   # pycodestyle errors

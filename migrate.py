@@ -2,9 +2,10 @@
 """数据库迁移脚本."""
 from typing import TypedDict
 
-from app import create_app
-from database import create_tables
-from models import SchedulerConfig, SystemConfig, User, db
+from sqlalchemy import select
+
+from core.database import create_all_tables, session_scope
+from models import SchedulerConfig, SystemConfig, User
 
 
 class ConfigValue(TypedDict):
@@ -13,119 +14,42 @@ class ConfigValue(TypedDict):
     desc: str
 
 
-app = create_app()
-
-
-# def migrate_add_last_run_time_column():
-#     """添加last_run_time字段到scheduler_configs表."""
-#     # 检查last_run_time字段是否已存在（使用DESCRIBE命令）
-#     result = db.session.execute(text("DESCRIBE scheduler_configs"))
-#     columns = result.fetchall()
-#     column_names = [col[0] for col in columns]
-
-#     if 'last_run_time' in column_names:
-#         print(
-#             "  Skipped: last_run_time column already "
-#             "exists in scheduler_configs table"
-#         )
-#         return
-
-#     # 添加last_run_time字段
-#     print("  Adding last_run_time column to scheduler_configs table...")
-#     db.session.execute(text(
-#         "ALTER TABLE scheduler_configs ADD COLUMN "
-#         "last_run_time DATETIME NULL COMMENT '任务最后执行时间'"
-#     ))
-
-#     db.session.commit()
-#     print("  Added: last_run_time column to scheduler_configs table")
-
-
-# def migrate_add_post_date_column():
-#     """添加post_date字段到artworks表."""
-#     # 检查post_date字段是否已存在（使用DESCRIBE命令）
-#     result = db.session.execute(text("DESCRIBE artworks"))
-#     columns = result.fetchall()
-#     column_names = [col[0] for col in columns]
-
-#     if 'post_date' in column_names:
-#         print("  Skipped: post_date column already exists in artworks table")
-#         return
-#     print("  Adding post_date column to artworks table...")
-#     db.session.execute(text(
-#         "ALTER TABLE artworks ADD COLUMN post_date DATETIME "
-#         "NOT NULL COMMENT '作品创作时间'"
-#     ))
-
-#     # 添加索引
-#     db.session.execute(text(
-#         "CREATE INDEX idx_post_date ON artworks(post_date)"
-#     ))
-
-#     db.session.commit()
-#     print("  Added: post_date column to artworks table")
-
-
-# def migrate_add_type_column():
-#     """添加type字段到artworks表."""
-
-#     # 检查type字段是否已存在（使用DESCRIBE命令）
-#     result = db.session.execute(text("DESCRIBE artworks"))
-#     columns = result.fetchall()
-#     column_names = [col[0] for col in columns]
-
-#     if 'type' in column_names:
-#         print("  Skipped: type column already exists in artworks table")
-#         return
-
-#     # 添加type字段
-#     print("  Adding type column to artworks table...")
-#     db.session.execute(text(
-#         "ALTER TABLE artworks ADD COLUMN type VARCHAR(20) "
-#         "NOT NULL DEFAULT 'illust' COMMENT '作品类型: illust, manga, ugoira'"
-#     ))
-
-#     # 添加索引
-#     db.session.execute(text(
-#         "CREATE INDEX ix_artworks_type ON artworks(type)"
-#     ))
-
-#     db.session.commit()
-#     print("  Added: type column to artworks table")
-
-
-def insert_defualt_scheduler_config():
+def insert_default_scheduler_config():
     """插入默认SchedulerConfig"""
     config_mapping: dict[str, str] = {
         'ranking_works': '0 13 * * *',
         'follow_new_follow': '0 */6 * * *',
         'follow_new_works': '0 */1 * * *',
         'update_artworks': '0 */4 * * *',
-        'clean_up_logs': '0 0 4 * * *'
+        'clean_up_logs': '0 4 * * *'
     }
-    migrated_count = 0
-    for key, expression in config_mapping.items():
-        existing = db.session.query(SchedulerConfig).filter_by(
-            collect_type=key
-        ).first()
-        if not existing:
-            config_item = SchedulerConfig(
-                collect_type=key,
-                crontab_expression=expression,
-                is_active=False
-            )
-            db.session.add(config_item)
-            migrated_count += 1
-            print(f"  Created: {key}")
-        else:
-            print(f"  Skipped: {key} (already exists)")
 
-    db.session.commit()
-    print(f"Migration completed: {migrated_count} config created.")
+    migrated_count = 0
+    with session_scope() as session:
+        for key, expression in config_mapping.items():
+            existing = session.execute(
+                select(SchedulerConfig).where(
+                    SchedulerConfig.collect_type == key
+                )
+            ).scalar_one_or_none()
+
+            if not existing:
+                config_item = SchedulerConfig(
+                    collect_type=key,
+                    crontab_expression=expression,
+                    is_active=False
+                )
+                session.add(config_item)
+                migrated_count += 1
+                print(f'  Created: {key}')
+            else:
+                print(f'  Skipped: {key} (already exists)')
+
+    print(f'Migration completed: {migrated_count} config created.')
 
 
 def insert_default_system_config():
-    """插入默认SystemrConfig"""
+    """插入默认SystemConfig"""
     # 定义配置项映射
     config_mapping: dict[str, ConfigValue] = {
         # Pixiv认证配置
@@ -217,45 +141,57 @@ def insert_default_system_config():
 
     # 创建或更新配置项
     migrated_count = 0
-    for key, item_info in config_mapping.items():
-        existing = db.session.query(SystemConfig).filter_by(
-            config_key=key
-        ).first()
-        if not existing:
-            config_item = SystemConfig(
-                config_key=key,
-                config_value=item_info['value'],
-                value_type=item_info['type'],
-                description=item_info['desc']
-            )
-            db.session.add(config_item)
-            migrated_count += 1
-            print(f"  Created: {key}")
-        else:
-            print(f"  Skipped: {key} (already exists)")
+    with session_scope() as session:
+        for key, item_info in config_mapping.items():
+            existing = session.execute(
+                select(SystemConfig).where(
+                    SystemConfig.config_key == key
+                )
+            ).scalar_one_or_none()
 
-    db.session.commit()
-    print(f"Migration completed: {migrated_count} config created.")
+            if not existing:
+                config_item = SystemConfig(
+                    config_key=key,
+                    config_value=item_info['value'],
+                    value_type=item_info['type'],
+                    description=item_info['desc']
+                )
+                session.add(config_item)
+                migrated_count += 1
+                print(f'  Created: {key}')
+            else:
+                print(f'  Skipped: {key} (already exists)')
+
+    print(f'Migration completed: {migrated_count} config created.')
+
+
+def check_user():
+    """检查用户"""
+    with session_scope() as session:
+        result = session.execute(
+            select(User.id)
+        ).scalars().all()
+
+        if not result:
+            print('\nNo users found.')
+            print('Please initialize system via API:')
+            print(' Set user and password in .env')
+            print('  POST /api/init')
+        else:
+            print(f'\nFound {len(result)} user(s).')
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        print("Creating database tables...")
-        create_tables(app)
+    print('Creating database tables...')
+    create_all_tables()
 
-        # SchedulerConfig默认值
-        insert_defualt_scheduler_config()
+    # SchedulerConfig默认值
+    insert_default_scheduler_config()
 
-        # SystemConfig默认值
-        insert_default_system_config()
+    # SystemConfig默认值
+    insert_default_system_config()
 
-        # 检查用户
-        if db.session.query(User).count() == 0:
-            print("\nNo users found.")
-            print("Please initialize system via API:")
-            print(' Set user and password in .env')
-            print("  POST /api/init")
-        else:
-            print("\nFound user(s).")
+    # 检查用户
+    check_user()
 
-        print("\nDatabase migration completed successfully!")
+    print('\nDatabase migration completed successfully!')

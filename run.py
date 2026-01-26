@@ -19,9 +19,7 @@ app = create_app()
 
 if __name__ == '__main__':
     if Config.DEBUG:
-        task_scheduler.app = app
-        with app.app_context():
-            task_scheduler.start()
+        task_scheduler.start()
 
     app.run(
         host='0.0.0.0',

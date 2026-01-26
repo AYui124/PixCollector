@@ -1,12 +1,19 @@
 """Flask应用主文件."""
 import logging
+import os
 
 from flask import Flask, redirect, render_template, url_for
 
-from api import api
-from auth import login_manager
+from auth import init_auth, login_manager
 from config import Config
-from database import db, init_db
+from controllers.artwork_controller import artwork_api
+from controllers.auth_controller import auth_api
+from controllers.collect_controller import collect_api
+from controllers.config_controller import config_api
+from controllers.follow_controller import follow_api
+from controllers.public_controller import public_api
+from core.database import get_engine
+from services import services
 from web import web
 
 
@@ -26,14 +33,14 @@ def create_app() -> Flask:
     # 初始化日志
     setup_logging(app)
 
-    # 初始化数据库
-    init_db(app)
+    # 初始化数据库引擎
+    get_engine()
 
     # 初始化错误处理器
     setup_error_handlers(app)
 
-    # 初始化Flask-Login
-    login_manager.init_app(app)
+    # 初始化认证系统（需要 auth service）
+    init_auth(app, services.auth)
 
     # 配置未登录访问重定向到首页
     @login_manager.unauthorized_handler
@@ -43,7 +50,14 @@ def create_app() -> Flask:
 
     # 注册蓝图
     app.register_blueprint(web)
-    app.register_blueprint(api, url_prefix='/api')
+
+    # 注册API蓝图
+    app.register_blueprint(public_api, url_prefix='/api')
+    app.register_blueprint(auth_api, url_prefix='/api')
+    app.register_blueprint(config_api, url_prefix='/api')
+    app.register_blueprint(collect_api, url_prefix='/api')
+    app.register_blueprint(artwork_api, url_prefix='/api')
+    app.register_blueprint(follow_api, url_prefix='/api')
 
     return app
 
@@ -55,6 +69,9 @@ def setup_logging(app: Flask) -> None:
     Args:
         app: Flask应用实例
     """
+    # 确保logs目录存在
+    os.makedirs('logs', exist_ok=True)
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -86,7 +103,6 @@ def setup_error_handlers(app: Flask) -> None:
     @app.errorhandler(500)
     def internal_error(error):
         """处理500错误."""
-        db.session.rollback()
         return render_template('errors/500.html'), 500
 
     @app.errorhandler(403)
@@ -107,10 +123,6 @@ def create_app_context() -> Flask:
 
 if __name__ == '__main__':
     app = create_app()
-
-    # 确保logs目录存在
-    import os
-    os.makedirs('logs', exist_ok=True)
 
     app.run(
         host='0.0.0.0',

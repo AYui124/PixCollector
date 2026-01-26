@@ -401,7 +401,7 @@
 <script>
 async function loadStats() {
     try {
-        const response = await fetch('/api/stats');
+        const response = await fetch('/api/dashboard/stats');
         const data = await response.json();
         if (data.success) {
             document.getElementById('total-artworks').textContent = data.stats.total_artworks;

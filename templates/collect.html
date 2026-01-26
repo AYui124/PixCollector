@@ -334,14 +334,14 @@ function displayLogs(logs) {
                 运行中
             </span>`
         
-        const typeClass = typeColors[log.type] || 'background-color: #f3f4f6; color: #374151;';
+    const typeClass = typeColors[log.log_type] || 'background-color: #f3f4f6; color: #374151;';
         
         return `
             <tr style="transition: background 0.15s;">
                 <td style="padding: 1rem 1.5rem; font-size: 0.875rem; color: #4b5563; white-space: nowrap;">${log.created_at}</td>
                 <td style="padding: 1rem 1.5rem; white-space: nowrap;">
                     <span class="type-badge" style="${typeClass}">
-                        ${typeMap[log.type] || log.type}
+                        ${typeMap[log.log_type] || log.log_type}
                     </span>
                 </td>
                 <td style="padding: 1rem 1.5rem; white-space: nowrap;">${statusBadge}</td>
