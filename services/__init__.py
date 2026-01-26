@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from services.artwork_service import ArtworkService
 from services.auth_service import AuthService
+from services.collection_service import CollectionService
 from services.config_service import ConfigService
 from services.follow_service import FollowService
 from services.pixiv_service import PixivService
@@ -28,6 +29,7 @@ class Services:
     """服务容器类，提供类型安全的服务访问."""
 
     _auth: 'AuthService | None' = None
+    _collection: 'CollectionService | None' = None
     _config: 'ConfigService | None' = None
     _artwork: 'ArtworkService | None' = None
     _follow: 'FollowService | None' = None
@@ -45,6 +47,18 @@ class Services:
     def auth(self, value):
         """设置认证服务."""
         self._auth = value
+
+    @property
+    def collection(self) -> CollectionService:
+        """获取采集日志服务."""
+        if self._collection is None:
+            self._collection = CollectionService.get_instance()
+        return self._collection
+
+    @collection.setter
+    def collection(self, value):
+        """设置采集日志服务."""
+        self._collection = value
 
     @property
     def config(self) -> ConfigService:
@@ -118,6 +132,7 @@ __all__ = [
     'ArtworkService',
     'FollowService',
     'AuthService',
+    'CollectionService',
     'SchedulerService',
     'Tools',
     'Services',

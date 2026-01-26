@@ -1,4 +1,20 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: pixcollector-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - pix-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
   web:
     image: pixcollector:latest
     container_name: pixcollector-web
@@ -15,12 +31,14 @@ services:
     volumes:
       - ./logs/web:/app/logs
     restart: unless-stopped
-    command: gunicorn -w 2 -b 0.0.0.0:5000 --access-logfile logs/access.log --error-logfile logs/error.log run:app
+    command: gunicorn -w 2 -b 0.0.0.0:5000 --access-logfile logs/access.log --error-logfile logs/error.log app_run:app
+    depends_on:
+      - redis
     networks:
       - pix-network
-  scheduler:
+  huey:
     image: pixcollector:latest
-    container_name: pixcollector-scheduler
+    container_name: pixcollector-huey
     env_file:
       - app.env
     environment:
@@ -30,9 +48,11 @@ services:
       # HTTP_PROXY: "http://72.17.0.1:1081"
       # HTTPS_PROXY: "http://72.17.0.1:1081"
     volumes:
-      - ./logs/job:/app/logs
+      - ./logs/huey:/app/logs
+    depends_on:
+      - redis
     restart: unless-stopped
-    command: python scheduler_run.py
+    command: python run_huey.py
     networks:
       - pix-network
 networks:

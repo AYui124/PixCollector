@@ -535,21 +535,7 @@ async function saveSchedulerConfig() {
             notify('保存失败: ' + data.message, 'error');
             return;
         }
-
-        // 刷新调度器任务
-        try {
-            const refreshResponse = await fetch('/api/scheduler/refresh', {
-                method: 'POST'
-            });
-            const refreshData = await refreshResponse.json();
-            if (refreshData.success) {
-                notify('任务配置保存成功，已刷新调度器', 'success');
-            } else {
-                notify('配置已保存但刷新调度器失败: ' + refreshData.message, 'warning');
-            }
-        } catch (refreshError) {
-            notify('配置已保存但刷新调度器失败: ' + refreshError.message, 'warning');
-        }
+        notify('任务配置保存成功', 'success');
     } catch (error) {
         notify('保存失败: ' + error.message, 'error');
     }

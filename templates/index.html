@@ -399,6 +399,236 @@
 
 {% block scripts %}
 <script>
+let taskCheckInterval = null;
+
+// 提交任务并显示进度
+async function submitTaskWithProgress(apiEndpoint, successMessage) {
+    try {
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            notify(successMessage, 'success');
+            showTaskProgress(data.task_id);
+        } else {
+            notify(data.message || '任务提交失败', 'error');
+        }
+    } catch (error) {
+        console.error('Task submission failed:', error);
+        notify('任务提交失败: ' + error.message, 'error');
+    }
+}
+
+// 显示任务进度模态框
+function showTaskProgress(taskId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal is-active';
+    modal.id = 'task-progress-modal';
+    modal.innerHTML = `
+        <div class="modal-background" onclick="closeTaskProgress()"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">任务进度</p>
+                <button class="delete" onclick="closeTaskProgress()"></button>
+            </header>
+            <section class="modal-card-body">
+                <div id="task-progress-content">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <div class="animate__animated animate__spin" style="width: 3rem; height: 3rem; border: 3px solid #2563eb; border-top-color: transparent; border-radius: 50%;"></div>
+                    </div>
+                    <p class="has-text-centered mt-4">正在加载任务信息...</p>
+                </div>
+            </section>
+            <footer class="modal-card-foot" style="justify-content: flex-end; margin-top: 0;">
+                <button class="button" onclick="closeTaskProgress()">关闭</button>
+            </footer>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 开始轮询任务状态
+    checkTaskStatus(taskId);
+}
+
+// 关闭任务进度模态框
+function closeTaskProgress() {
+    const modal = document.getElementById('task-progress-modal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    if (taskCheckInterval) {
+        clearInterval(taskCheckInterval);
+        taskCheckInterval = null;
+    }
+}
+
+// 检查任务状态
+async function checkTaskStatus(taskId) {
+    // 清除之前的定时器
+    if (taskCheckInterval) {
+        clearInterval(taskCheckInterval);
+    }
+    
+    // 立即检查一次
+    await updateTaskStatus(taskId);
+    
+    // 每3秒检查一次
+    taskCheckInterval = setInterval(async () => {
+        await updateTaskStatus(taskId);
+    }, 3000);
+}
+
+// 更新任务状态显示
+async function updateTaskStatus(taskId) {
+    const content = document.getElementById('task-progress-content');
+    
+    try {
+        const response = await fetch(`/api/collect/task/${taskId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            content.innerHTML = `
+                <div class="notification is-danger">
+                    获取任务状态失败: ${data.message}
+                </div>
+            `;
+            clearInterval(taskCheckInterval);
+            return;
+        }
+        
+        const status = data.status;
+        const result = data.result;
+        const log = data.log;
+        
+        let statusBadge = '';
+        let statusText = '';
+        
+        if (status === 'running') {
+            statusBadge = `<span class="tag is-info is-light">运行中</span>`;
+            statusText = '任务正在执行中，请稍候...';
+        } else if (status === 'completed') {
+            clearInterval(taskCheckInterval);
+            
+            if (result && result.success) {
+                statusBadge = `<span class="tag is-success is-light">成功</span>`;
+                statusText = '任务执行完成！';
+                
+                // 显示结果
+                const count = result.count || result.new_follows || result.total_count || 
+                            result.updated_count || result.deleted_count || 0;
+                const message = result.message || '执行成功';
+                
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 2rem 0;">
+                        <div class="animate__animated animate__bounceIn" style="font-size: 4rem; color: #10b981; margin-bottom: 1rem;">
+                            ✓
+                        </div>
+                        <h3 class="title is-4 animate__animated animate__fadeInUp">任务完成</h3>
+                        <p class="has-text-grey mb-4 animate__animated animate__fadeIn">${message}</p>
+                    </div>
+                `;
+                // 重新加载数据
+                loadStats();
+                loadRecentLogs();
+                return;
+            } else {
+                statusBadge = `<span class="tag is-danger is-light">失败</span>`;
+                statusText = '任务执行失败';
+            }
+        } else {
+            statusBadge = `<span class="tag is-warning is-light">未知</span>`;
+            statusText = '任务状态未知';
+        }
+        
+        // 显示运行中的状态
+        if (status === 'running' && log) {
+            const typeMap = {
+                'ranking_works': '排行作品采集',
+                'follow_new_follow': '关注列表同步',
+                'follow_new_works': '关注用户新作品采集',
+                'follow_user_artworks': '存量作品采集',
+                'update_artworks': '作品元数据更新',
+                'clean_up_logs': '旧日志清理'
+            };
+            
+            const typeName = typeMap[log.log_type] || log.log_type;
+            const count = log.artworks_count || 0;
+            
+            content.innerHTML = `
+                <div>
+                    <div class="has-text-centered mb-5">
+                        ${statusBadge}
+                    </div>
+                    <div class="box">
+                        <div class="mb-4">
+                            <p class="is-size-7 has-text-grey mb-1">任务类型</p>
+                            <p class="is-size-5 has-text-weight-bold">${typeName}</p>
+                        </div>
+                        <div class="mb-4">
+                            <p class="is-size-7 has-text-grey mb-1">开始时间</p>
+                            <p class="is-size-6">${log.created_at}</p>
+                        </div>
+                        <div class="mb-4">
+                            <p class="is-size-7 has-text-grey mb-1">当前状态</p>
+                            <p class="is-size-6">${log.message}</p>
+                        </div>
+                        <div>
+                            <p class="is-size-7 has-text-grey mb-1">已处理数量</p>
+                            <p class="is-size-5 has-text-weight-bold" style="color: #2563eb;">${count}</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <div class="animate__animated animate__spin" style="width: 2rem; height: 2rem; border: 2px solid #2563eb; border-top-color: transparent; border-radius: 50%; margin-right: 0.5rem;"></div>
+                        <span class="has-text-grey">${statusText}</span>
+                    </div>
+                </div>
+            `;
+        } else if (status === 'running') {
+            content.innerHTML = `
+                <div>
+                    <div class="has-text-centered mb-5">
+                        ${statusBadge}
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <div class="animate__animated animate__spin" style="width: 3rem; height: 3rem; border: 3px solid #2563eb; border-top-color: transparent; border-radius: 50%; margin-right: 1rem;"></div>
+                        <span class="is-size-5">${statusText}</span>
+                    </div>
+                </div>
+            `;
+        } else if (result && !result.success) {
+            // 显示失败结果
+            content.innerHTML = `
+                <div style="text-align: center; padding: 2rem 0;">
+                    <div class="animate__animated animate__shake" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;">
+                        ✗
+                    </div>
+                    <h3 class="title is-4 animate__animated animate__fadeIn">任务失败</h3>
+                    <p class="has-text-grey mb-4 animate__animated animate__fadeIn">${result.message || '未知错误'}</p>
+                </div>
+            `;
+            // 重新加载数据
+            loadStats();
+            loadRecentLogs();
+        }
+    } catch (error) {
+        console.error('Failed to check task status:', error);
+        content.innerHTML = `
+            <div class="notification is-danger">
+                检查任务状态失败: ${error.message}
+            </div>
+        `;
+        clearInterval(taskCheckInterval);
+    }
+}
+
 async function loadStats() {
     try {
         const response = await fetch('/api/dashboard/stats');
@@ -449,146 +679,35 @@ async function loadRecentLogs() {
 }
 
 async function collectDaily() {
-    notify('开始采集每日排行...', 'info');
-    try {
-        const response = await fetch('/api/collect/daily', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            notify(`采集完成，共${data.count}个作品`, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '采集失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/daily', '每日排行采集任务已提交');
 }
 
 async function collectWeekly() {
-    notify('开始采集每周排行...', 'info');
-    try {
-        const response = await fetch('/api/collect/weekly', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            notify(`采集完成，共${data.count}个作品`, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '采集失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/weekly', '每周排行采集任务已提交');
 }
 
 async function collectMonthly() {
-    notify('开始采集每月排行...', 'info');
-    try {
-        const response = await fetch('/api/collect/monthly', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            notify(`采集完成，共${data.count}个作品`, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '采集失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/monthly', '每月排行采集任务已提交');
 }
 
 async function syncFollows() {
-    notify('开始同步关注列表...', 'info');
-    try {
-        const response = await fetch('/api/collect/sync-follows', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            notify(`同步完成，新增${data.new_follows}个关注`, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '同步失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/sync-follows', '关注列表同步任务已提交');
 }
 
 async function collectFollowNewWorks() {
-    notify('开始采集最新作品...', 'info');
-    try {
-        const response = await fetch('/api/collect/follow-new-works', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            let message = `采集完成，共${data.total_new}个新作品`;
-            if (data.new_users > 0) {
-                message += `，发现${data.new_users}个新用户`;
-            }
-            if (data.backlogged_artworks > 0) {
-                message += `，补充${data.backlogged_artworks}个历史作品`;
-            }
-            notify(message, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '采集失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/follow-new-works', '关注用户新作品采集任务已提交');
 }
 
 async function collectFollowUserArtworks() {
-    notify('开始初始全量关注采集...', 'info');
-    try {
-        const response = await fetch('/api/collect/follow-user-artworks', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            notify(`采集完成，共${data.total_new}个作品，处理${data.total_processed}个用户`, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '采集失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/follow-user-artworks', '初始全量关注采集任务已提交');
 }
 
 async function updateArtworks() {
-    notify('开始更新作品元数据...', 'info');
-    try {
-        const response = await fetch('/api/collect/update-artworks', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            notify(`更新完成，成功${data.successed}个`, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '更新失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/update-artworks', '作品元数据更新任务已提交');
 }
 
 async function cleanUpLogs() {
-    notify('开始清理日志...', 'info');
-    try {
-        const response = await fetch('/api/collect/cleanup-logs', { method: 'POST' });
-        const data = await response.json();
-        if (data.success) {
-            notify(`清理完成，成功${data.deleted_count}个`, 'success');
-            loadStats();
-            loadRecentLogs();
-        } else {
-            notify(data.message || '清理失败', 'error');
-        }
-    } catch (error) {
-        notify('操作失败: ' + error.message, 'error');
-    }
+    await submitTaskWithProgress('/api/collect/cleanup-logs', '旧日志清理任务已提交');
 }
 
 // 页面加载时获取数据

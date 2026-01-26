@@ -1,4 +1,5 @@
 """定时任务Service."""
+from datetime import datetime
 from typing import ClassVar
 
 from repositories.scheduler_repository import SchedulerRepository
@@ -72,3 +73,19 @@ class SchedulerService:
                 self._scheduler_repo.update_crontab(
                     job_type, crontab, is_active
                 )
+
+    def update_last_run_time(
+        self, job_id: str, run_time: datetime
+    ) -> bool:
+        """
+        更新任务最后执行时间.
+
+        Args:
+            job_id: 任务ID
+            run_time: 执行时间
+
+        Returns:
+            是否成功
+        """
+        result = self._scheduler_repo.update_last_run_time(job_id, run_time)
+        return result is not None
