@@ -55,7 +55,7 @@ class Config:
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
 
     ADMIN_USER = os.getenv('ADMIN_USER', 'user')
-    ADMIN_PWD = os.getenv('ADMIN_PWD', 'password')
+    ADMIN_PWD = os.getenv('ADMIN_PWD', 'Pix@1234')
 
     # Pixiv图片代理
     PIXIV_PROXY_URL = os.getenv('PIXIV_PROXY_URL', 'https://i.pixiv.re')

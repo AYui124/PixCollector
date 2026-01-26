@@ -1,84 +1,65 @@
-"""定时任务调度模块."""
+"""定时任务调度模块（不依赖Flask）."""
 import logging
+from datetime import datetime
 
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from collector import PixivCollector
-from database import db
-from models import SchedulerConfig, SystemConfig
-from rate_limiter import RateLimiter
-from updater import ArtworkUpdater
+from models.scheduler_config import SchedulerConfig
+from repositories.collection_repository import CollectionRepository
+from repositories.config_repository import ConfigRepository
+from repositories.scheduler_repository import SchedulerRepository
+from services.config_service import ConfigService
+from services.pixiv_service import PixivService
 
 logger = logging.getLogger(__name__)
 
 
 class TaskScheduler:
     """
-    定时任务调度器
+    定时任务调度器（不依赖Flask）.
     全局唯一，请不要额外new实例，import task_scheduler即可
     """
 
-    def __init__(self, app=None):
-        """
-        初始化调度器.
-
-        Args:
-            app: Flask应用实例
-        """
-        self.app = app
+    def __init__(self):
+        """初始化调度器."""
         self.scheduler = BackgroundScheduler()
-        self.rate_limiter = None
-        self.collector = None
-        self.updater = None
+        self.pixiv_service = None
+
+        # Repositories
+        self._config_repo = ConfigRepository()
+        self._scheduler_repo = SchedulerRepository()
+        self._collection_repo = CollectionRepository()
+
+        # Services
+        self._config_service = ConfigService(self._config_repo)
 
         # 添加错误监听器
         self.scheduler.add_listener(
             self._job_listener, EVENT_JOB_ERROR | EVENT_JOB_EXECUTED
         )
 
-    def _get_config_dict(self) -> dict:
-        """从SystemConfig获取配置字典."""
-        config_items = db.session.query(SystemConfig).all()
-        config_dict = {}
-        for item in config_items:
-            config_dict[item.config_key] = item.to_dict()['value']
-        return config_dict
-
     def _load_config(self) -> None:
-        """从数据库加载配置并初始化速率限制器."""
-        config_dict = self._get_config_dict()
+        """从数据库加载配置并初始化组件."""
+        config_dict = self._config_service.get_all_config()
+        refresh_token = config_dict.get('refresh_token', '')
 
-        if not config_dict:
-            logger.warning("No system config found, using defaults")
-            config_dict = {}
+        if not refresh_token:
+            logger.warning("No refresh_token found in config")
+            return
 
-        # 获取配置值，提供默认值
-        delay_min = config_dict.get('api_delay_min', 1.0)
-        delay_max = config_dict.get('api_delay_max', 3.0)
-        error_delay_429_min = config_dict.get('error_delay_429_min', 30.0)
-        error_delay_429_max = config_dict.get('error_delay_429_max', 60.0)
-        error_delay_403_min = config_dict.get('error_delay_403_min', 30.0)
-        error_delay_403_max = config_dict.get('error_delay_403_max', 50.0)
-        error_delay_other_min = config_dict.get('error_delay_other_min', 10.0)
-        error_delay_other_max = config_dict.get('error_delay_other_max', 30.0)
+        # 初始化Pixiv服务（client和limiter由service内部初始化）
+        from repositories.artwork_repository import ArtworkRepository
+        from repositories.follow_repository import FollowRepository
 
-        # 初始化速率限制器
-        self.rate_limiter = RateLimiter(
-            delay_min=delay_min,
-            delay_max=delay_max,
-            error_delay_429_min=error_delay_429_min,
-            error_delay_429_max=error_delay_429_max,
-            error_delay_403_min=error_delay_403_min,
-            error_delay_403_max=error_delay_403_max,
-            error_delay_other_min=error_delay_other_min,
-            error_delay_other_max=error_delay_other_max,
+        self.pixiv_service = PixivService(
+            artwork_repo=ArtworkRepository(),
+            follow_repo=FollowRepository(),
+            collection_repo=self._collection_repo,
+            config_service=self._config_service
+            # 无需传入client和limiter，service会自动初始化
         )
-
-        # 初始化采集器和更新器
-        self.collector = PixivCollector(self.rate_limiter)
-        self.updater = ArtworkUpdater(self.rate_limiter)
 
         logger.info("Configuration loaded and components initialized")
 
@@ -102,137 +83,82 @@ class TaskScheduler:
             job_id: 任务ID
         """
         try:
-            from datetime import datetime
-            config = db.session.query(SchedulerConfig).filter_by(
-                collect_type=job_id
-            ).first()
-            if config:
-                config.last_run_time = datetime.now()
-                db.session.commit()
-                logger.info(f"Updated run time for job: {job_id}")
+            self._scheduler_repo.update_last_run_time(job_id, datetime.now())
+            logger.info(f"Updated run time for job: {job_id}")
         except Exception as e:
             logger.error(f"Failed to update run time for {job_id}: {e}")
 
     def heartbeat(self) -> None:
-        """后台任务心跳"""
-        with self.app.app_context():
-            logger.info("Scheduler alive")
+        """后台任务心跳."""
+        logger.info("Scheduler alive")
 
     def _collect_ranking(self) -> None:
         """采集排行榜任务."""
-        with self.app.app_context():
-            logger.info("Starting rank collection job")
-            self._collect_daily_rank()
-            self._collect_weekly_rank()
-            self._collect_monthly_rank()
-            # 更新任务执行时间
+        logger.info("Starting rank collection job")
+        try:
+            if not self.pixiv_service:
+                return
+            self.pixiv_service.collect_daily_rank()
+            self.pixiv_service.collect_weekly_rank()
+            self.pixiv_service.collect_monthly_rank()
             self._update_job_run_time('ranking_works')
-
-    def _collect_daily_rank(self) -> None:
-        """采集每日排行任务."""
-        logger.info("Starting daily rank collection job")
-        try:
-            if not self.collector:
-                return
-            if self.collector.rate_limiter:
-                self.collector.rate_limiter.wait()
-            result = self.collector.collect_daily_rank()
-            logger.info(f"Daily rank collection completed: {result}")
         except Exception as e:
-            logger.error(f"Daily rank collection failed: {e}")
-
-    def _collect_weekly_rank(self) -> None:
-        """采集每周排行任务."""
-        logger.info("Starting weekly rank collection job")
-        try:
-            if not self.collector:
-                return
-            if self.collector.rate_limiter:
-                self.collector.rate_limiter.wait()
-            result = self.collector.collect_weekly_rank()
-            logger.info(f"Weekly rank collection completed: {result}")
-        except Exception as e:
-            logger.error(f"Weekly rank collection failed: {e}")
-
-    def _collect_monthly_rank(self) -> None:
-        """采集每月排行任务."""
-        logger.info("Starting monthly rank collection job")
-        try:
-            if not self.collector:
-                return
-            if self.collector.rate_limiter:
-                self.collector.rate_limiter.wait()
-            result = self.collector.collect_monthly_rank()
-            logger.info(f"Monthly rank collection completed: {result}")
-        except Exception as e:
-            logger.error(f"Monthly rank collection failed: {e}")
+            logger.error(f"Rank collection failed: {e}")
 
     def _sync_follows(self) -> None:
         """同步关注列表任务."""
-        with self.app.app_context():
-            logger.info("Starting follow sync job")
-            try:
-                if not self.collector:
-                    return
-                result = self.collector.sync_follows()
-                logger.info(f"Follow sync completed: {result}")
-                # 更新任务执行时间
-                self._update_job_run_time('follow_new_follow')
-            except Exception as e:
-                logger.error(f"Follow sync failed: {e}")
+        logger.info("Starting follow sync job")
+        try:
+            if not self.pixiv_service:
+                return
+            self.pixiv_service.sync_follows()
+            self._update_job_run_time('follow_new_follow')
+        except Exception as e:
+            logger.error(f"Follow sync failed: {e}")
 
-    def _collect_follow_works(self) -> None:
+    def _collect_follow_new_works(self) -> None:
         """采集关注用户新作品任务."""
-        with self.app.app_context():
-            logger.info("Starting follow works collection job")
-            try:
-                if not self.collector:
-                    return
-                result = self.collector.collect_follow_works()
-                logger.info(f"Follow works collection completed: {result}")
-                # 更新任务执行时间
-                self._update_job_run_time('follow_new_works')
-            except Exception as e:
-                logger.error(f"Follow works collection failed: {e}")
+        logger.info("Starting follow new works collection job")
+        try:
+            if not self.pixiv_service:
+                return
+            self.pixiv_service.collect_follow_new_works()
+            self._update_job_run_time('follow_new_works')
+        except Exception as e:
+            logger.error(f"Follow new works collection failed: {e}")
 
     def _update_artworks(self) -> None:
         """更新作品元数据任务."""
-        with self.app.app_context():
-            logger.info("Starting artwork update job")
-            try:
-                if not self.updater:
-                    return
-                result = self.updater.update_artworks()
-                logger.info(f"Artwork update completed: {result}")
-                # 更新任务执行时间
-                self._update_job_run_time('update_artworks')
-            except Exception as e:
-                logger.error(f"Artwork update failed: {e}")
+        logger.info("Starting artwork update job")
+        try:
+            if not self.pixiv_service:
+                return
+            self.pixiv_service.update_artworks()
+            self._update_job_run_time('update_artworks')
+        except Exception as e:
+            logger.error(f"Artwork update failed: {e}")
 
     def _clean_up_logs(self) -> None:
         """清理旧日志任务."""
-        with self.app.app_context():
-            logger.info("Starting log cleanup job")
-            try:
-                # 执行清理
-                if not self.collector:
-                    return
-
-                result = self.collector.clean_up_old_logs()
-                logger.info(f"Log cleanup completed: {result}")
-
-                # 更新任务执行时间
-                self._update_job_run_time('cleanup_logs')
-
-            except Exception as e:
-                logger.error(f"Log cleanup failed: {e}")
+        logger.info("Starting log cleanup job")
+        try:
+            # 获取保留天数配置（已自动转换）
+            config = self._config_service.get_all_config()
+            retention_days = config.get('log_retention_days', 30)
+            deleted_count = self._collection_repo.delete_old_logs(
+                retention_days
+            )
+            logger.info(f"Deleted {deleted_count} old logs")
+            self._update_job_run_time('clean_up_logs')
+        except Exception as e:
+            logger.error(f"Log cleanup failed: {e}")
 
     def _setup_jobs(self) -> None:
         """设置所有定时任务."""
         self._load_config()
 
         # 获取任务配置
-        configs = db.session.query(SchedulerConfig).all()
+        configs = self._scheduler_repo.get_all()
 
         for config in configs:
             if not config.is_active:
@@ -241,6 +167,7 @@ class TaskScheduler:
 
             self._add_job(config)
 
+        # 添加心跳任务
         self.scheduler.add_job(
             self.heartbeat,
             'interval',
@@ -266,7 +193,7 @@ class TaskScheduler:
         elif config.collect_type == 'follow_new_follow':
             job_func = self._sync_follows
         elif config.collect_type == 'follow_new_works':
-            job_func = self._collect_follow_works
+            job_func = self._collect_follow_new_works
         elif config.collect_type == 'update_artworks':
             job_func = self._update_artworks
         elif config.collect_type == 'clean_up_logs':
@@ -329,13 +256,13 @@ class TaskScheduler:
 
     def refresh_jobs(self) -> None:
         """动态刷新所有任务配置（无需重启）."""
-        configs = db.session.query(SchedulerConfig).all()
+        configs = self._scheduler_repo.get_all()
         jobs = self.scheduler.get_jobs()
+
         for config in configs:
             job_id = config.collect_type
             job = next((j for j in jobs if j.id == config.collect_type), None)
             if job:
-                # Job 存在，更新 interval 并激活
                 self._update_job(config)
             else:
                 if config.is_active:

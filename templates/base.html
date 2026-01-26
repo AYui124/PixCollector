@@ -199,7 +199,7 @@
                 <div class="navbar-end">
                     {% if current_user.is_authenticated %}
                     <span class="navbar-item has-text-grey-light">
-                        欢迎, <span class="has-text-white has-text-weight-medium">{{ current_user.user.username }}</span>
+                        欢迎, <span class="has-text-white has-text-weight-medium">{{ current_user.username }}</span>
                     </span>
                     <a href="/logout" class="navbar-item">退出</a>
                     {% else %}

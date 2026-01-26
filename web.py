@@ -2,9 +2,8 @@
 from flask import Blueprint, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
+from app import services
 from auth import WebUser
-from database import db
-from models import User
 
 # 创建Web蓝图
 web = Blueprint('web', __name__)
@@ -28,13 +27,13 @@ def web_login():
     """登录页面."""
     login_error = None
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = request.form.get('username') or ''
         password = request.form.get('password') or ''
 
-        user = db.session.query(User).filter_by(username=username).first()
+        user = services.auth.authenticate(username, password)
 
-        if user and user.check_password(password):
-            login_user(WebUser(user))
+        if user:
+            login_user(WebUser(user.id, user.username, user.is_admin))
             return redirect(url_for('web.index'))
         else:
             login_error = '用户名或密码错误'
