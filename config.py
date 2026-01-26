@@ -63,6 +63,32 @@ class Config:
     # GitHub仓库URL
     GITHUB_URL = GITHUB_URL
 
+    # Huey配置
+    HUEY_REDIS_HOST = os.getenv(
+        'HUEY_REDIS_HOST', 'localhost'
+    )
+    HUEY_REDIS_PORT = os.getenv(
+        'HUEY_REDIS_PORT', '6379'
+    )
+    HUEY_REDIS_DB = os.getenv(
+        'HUEY_REDIS_DB', '0'
+    )
+    HUEY_REDIS_PASSWORD = os.getenv(
+        'HUEY_REDIS_PASSWORD', ''
+    )
+    HUEY_TASK_TIMEOUT = int(
+        os.getenv('HUEY_TASK_TIMEOUT', 86400)
+    )  # 24小时
+    HUEY_RESULT_TIMEOUT = int(
+        os.getenv('HUEY_RESULT_TIMEOUT', 604800)
+    )  # 7天
+    HUEY_WORKER_TYPE = os.getenv(
+        'HUEY_WORKER_TYPE', 'thread'
+    )  # thread/process/gevent
+    HUEY_WORKER_COUNT = int(
+        os.getenv('HUEY_WORKER_COUNT', 2)
+    )
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,

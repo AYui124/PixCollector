@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required
 
 from repositories.collection_repository import CollectionRepository
-from services import services
+from services import huey_task_service, services
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,14 @@ def collect_daily():
         }), 500
 
     try:
-        result = services.pixiv.collect_daily_rank()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.collect_daily_rank_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '每日排行采集任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual daily collection failed: {e}")
+        logger.error(f"Daily rank task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -41,10 +45,14 @@ def collect_weekly():
         }), 500
 
     try:
-        result = services.pixiv.collect_weekly_rank()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.collect_weekly_rank_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '每周排行采集任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual weekly collection failed: {e}")
+        logger.error(f"Weekly rank task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -59,10 +67,14 @@ def collect_monthly():
         }), 500
 
     try:
-        result = services.pixiv.collect_monthly_rank()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.collect_monthly_rank_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '每月排行采集任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual monthly collection failed: {e}")
+        logger.error(f"Monthly rank task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -77,10 +89,14 @@ def sync_follows():
         }), 500
 
     try:
-        result = services.pixiv.sync_follows()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.sync_follows_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '关注列表同步任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual follow sync failed: {e}")
+        logger.error(f"Follow sync task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -146,8 +162,6 @@ def collect_user_artworks():
 
     data = request.get_json()
     user_id = data.get('user_id')
-    backtrack_years = data.get('backtrack_years', 2)
-
     if not user_id:
         return jsonify({
             'success': False,
@@ -155,20 +169,14 @@ def collect_user_artworks():
         }), 400
 
     try:
-        follow = services.follow.get_by_user_id(user_id)
-
-        if not follow:
-            return jsonify({
-                'success': False,
-                'message': 'User not found in follows'
-            }), 404
-
-        result = services.pixiv.collect_single_user_artworks(
-            follow, backtrack_years
-        )
-        return jsonify({'success': True, **result})
+        task = huey_task_service.collect_user_artworks_task(user_id)
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '用户作品采集任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual user artworks collection failed: {e}")
+        logger.error(f"User artworks task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -183,10 +191,14 @@ def collect_follow_user_artworks():
         }), 500
 
     try:
-        result = services.pixiv.collect_all_follow_artworks()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.collect_all_follow_artworks_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '初始全量关注采集任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual follow user artworks collection failed: {e}")
+        logger.error(f"Follow artworks task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -201,10 +213,14 @@ def collect_follow_new_works():
         }), 500
 
     try:
-        result = services.pixiv.collect_follow_new_works()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.collect_follow_new_works_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '关注用户新作品采集任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual follow works collection failed: {e}")
+        logger.error(f"Follow new works task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -219,10 +235,14 @@ def update_artworks():
         }), 500
 
     try:
-        result = services.pixiv.update_artworks()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.update_artworks_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '作品元数据更新任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual artworks update failed: {e}")
+        logger.error(f"Artworks update task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
@@ -237,8 +257,24 @@ def cleanup_logs():
         }), 500
 
     try:
-        result = services.pixiv.clean_up_old_logs()
-        return jsonify({'success': True, **result})
+        task = huey_task_service.cleanup_logs_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '旧日志清理任务已提交'
+        })
     except Exception as e:
-        logger.error(f"Manual logs cleanup failed: {e}")
+        logger.error(f"Logs cleanup task submission failed: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@collect_api.route('/collect/task/<task_id>', methods=['GET'])
+@login_required
+def get_task_status(task_id):
+    """获取任务状态."""
+    try:
+        status = huey_task_service.get_task_status(task_id)
+        return jsonify({'success': True, **status})
+    except Exception as e:
+        logger.error(f"Failed to get task status: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500

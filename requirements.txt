@@ -8,3 +8,5 @@ apscheduler==3.10.4
 python-dotenv==1.0.0
 werkzeug==3.0.1
 cryptography==46.0.3
+huey==2.5.2
+redis==5.0.1

@@ -238,7 +238,7 @@ class PixivService:
         offset = int(qs.get('offset') or 0) if qs else 0
         return offset
 
-    def _get_config_value(self, key: str, default=None):
+    def get_config_value(self, key: str, default=None):
         """
         获取配置值.
 
@@ -846,7 +846,7 @@ class PixivService:
 
         try:
             # 获取回采年限配置
-            backtrack_years = self._get_config_value(
+            backtrack_years = self.get_config_value(
                 'new_user_backtrack_years', 2
             )
 
@@ -921,7 +921,7 @@ class PixivService:
             self._ensure_valid_token()
 
             # 获取回采年限配置
-            backtrack_years = self._get_config_value(
+            backtrack_years = self.get_config_value(
                 'new_user_backtrack_years', 2
             )
 
@@ -1322,8 +1322,8 @@ class PixivService:
             self._ensure_valid_token()
 
             # 获取需要更新的作品（有效，按last_updated_at升序）
-            update_days = self._get_config_value('update_interval_days', 30)
-            update_max_per_run = self._get_config_value(
+            update_days = self.get_config_value('update_interval_days', 30)
+            update_max_per_run = self.get_config_value(
                 'update_max_per_run', 200
             )
 
@@ -1409,7 +1409,7 @@ class PixivService:
 
         try:
             # 获取保留天数配置
-            retention_days = self._get_config_value('log_retention_days', 90)
+            retention_days = self.get_config_value('log_retention_days', 90)
 
             # 执行清理
             deleted_count = self._collection_repo.delete_old_logs(
