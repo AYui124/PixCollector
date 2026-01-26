@@ -1,9 +1,12 @@
 """Huey异步任务服务."""
 import logging
+from datetime import datetime
+
+from croniter import croniter
+from huey import crontab
 
 from config import Config
 from core.huey import huey
-from repositories.collection_repository import CollectionRepository
 from services import services
 
 logger = logging.getLogger(__name__)
@@ -265,8 +268,7 @@ def get_task_status(task_id: str) -> dict:
         pass
 
     # 获取关联的采集日志
-    log_repo = CollectionRepository()
-    recent_logs = log_repo.get_recent(100)
+    recent_logs = services.collection.get_recent_logs(100)
 
     # 尝试找到与任务关联的日志
     log = None
@@ -286,3 +288,140 @@ def get_task_status(task_id: str) -> dict:
         'metadata': metadata,
         'log': log.to_dict() if log else None
     }
+
+
+def _get_task_function(collect_type: str):
+    """
+    根据任务类型获取对应的任务函数.
+
+    Args:
+        collect_type: 任务类型
+
+    Returns:
+        任务函数或None
+    """
+    task_mapping = {
+        'ranking_works': _execute_ranking_tasks,
+        'follow_new_follow': sync_follows_task,
+        'follow_new_works': collect_follow_new_works_task,
+        'update_artworks': update_artworks_task,
+        'clean_up_logs': cleanup_logs_task,
+    }
+    return task_mapping.get(collect_type)
+
+
+def _execute_ranking_tasks():
+    """执行所有排行榜采集任务."""
+    tasks = [
+        ('daily', collect_daily_rank_task),
+        ('weekly', collect_weekly_rank_task),
+        ('monthly', collect_monthly_rank_task)
+    ]
+    for rank_type, task_func in tasks:
+        try:
+            logger.info(f"Executing {rank_type} rank collection")
+            task_func()
+        except Exception as e:
+            logger.error(
+                f"{rank_type.capitalize()} rank collection failed: {e}",
+                exc_info=True
+            )
+
+
+def _update_job_run_time(job_id: str) -> None:
+    """
+    更新任务最后执行时间.
+
+    Args:
+        job_id: 任务ID
+    """
+    try:
+        services.scheduler.update_last_run_time(job_id, datetime.now())
+        logger.info(f"Updated run time for job: {job_id}")
+    except Exception as e:
+        logger.error(f"Failed to update run time for {job_id}: {e}")
+
+
+@huey.periodic_task(crontab())
+def schedule_dispatcher_task():
+    """
+    动态定时任务分发器 - 每分钟执行一次.
+    从数据库读取任务配置，根据cron表达式调度执行相应任务.
+    """
+
+    try:
+        configs = services.scheduler.get_all_configs()
+
+        if not configs:
+            return
+
+        current_time = datetime.now()
+
+        for config in configs:
+            if not config.is_active:
+                continue
+
+            # 获取任务函数
+            task_func = _get_task_function(config.collect_type)
+            if not task_func:
+                logger.warning(f"Unknown job type: {config.collect_type}")
+                continue
+
+            # 使用croniter计算下次执行时间
+            try:
+                cron = croniter(config.crontab_expression, current_time)
+                cron.get_next(datetime)
+
+                # 如果上次执行时间为空，
+                # 或者下次执行时间在当前时间之前（包括当前分钟）
+                should_run = False
+                if config.last_run_time is None:
+                    should_run = True
+                else:
+                    # 计算基于上次执行时间的下一次应该执行的时间
+                    cron_prev = croniter(
+                        config.crontab_expression,
+                        config.last_run_time
+                    )
+                    expected_next = cron_prev.get_next(datetime)
+                    # 如果当前时间已经超过了预期执行时间，则应该执行
+                    if current_time >= expected_next:
+                        should_run = True
+
+                if should_run:
+                    logger.info(
+                        f"Executing scheduled task: {config.collect_type}"
+                    )
+                    try:
+                        # 调用任务函数
+                        if config.collect_type == 'ranking_works':
+                            # 排行榜任务执行后更新时间
+                            _execute_ranking_tasks()
+                        else:
+                            # 其他任务异步执行
+                            task_func()
+
+                        # 更新最后执行时间
+                        _update_job_run_time(config.collect_type)
+                        logger.info(
+                            f"Task {config.collect_type} executed successfully"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Task {config.collect_type} "
+                            f"execution failed: {e}",
+                            exc_info=True
+                        )
+
+            except Exception as e:
+                logger.error(
+                    f"Error parsing cron expression for "
+                    f"{config.collect_type}: {e}",
+                    exc_info=True
+                )
+
+    except Exception as e:
+        logger.error(
+            f"Scheduler dispatcher error: {e}",
+            exc_info=True
+        )

@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import login_required
 
 from repositories.collection_repository import CollectionRepository
-from services import huey_task_service, services
+from services import huey_service, services
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def collect_daily():
         }), 500
 
     try:
-        task = huey_task_service.collect_daily_rank_task()
+        task = huey_service.collect_daily_rank_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -45,7 +45,7 @@ def collect_weekly():
         }), 500
 
     try:
-        task = huey_task_service.collect_weekly_rank_task()
+        task = huey_service.collect_weekly_rank_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -67,7 +67,7 @@ def collect_monthly():
         }), 500
 
     try:
-        task = huey_task_service.collect_monthly_rank_task()
+        task = huey_service.collect_monthly_rank_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -89,7 +89,7 @@ def sync_follows():
         }), 500
 
     try:
-        task = huey_task_service.sync_follows_task()
+        task = huey_service.sync_follows_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -169,7 +169,7 @@ def collect_user_artworks():
         }), 400
 
     try:
-        task = huey_task_service.collect_user_artworks_task(user_id)
+        task = huey_service.collect_user_artworks_task(user_id)
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -191,7 +191,7 @@ def collect_follow_user_artworks():
         }), 500
 
     try:
-        task = huey_task_service.collect_all_follow_artworks_task()
+        task = huey_service.collect_all_follow_artworks_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -213,7 +213,7 @@ def collect_follow_new_works():
         }), 500
 
     try:
-        task = huey_task_service.collect_follow_new_works_task()
+        task = huey_service.collect_follow_new_works_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -235,7 +235,7 @@ def update_artworks():
         }), 500
 
     try:
-        task = huey_task_service.update_artworks_task()
+        task = huey_service.update_artworks_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -257,7 +257,7 @@ def cleanup_logs():
         }), 500
 
     try:
-        task = huey_task_service.cleanup_logs_task()
+        task = huey_service.cleanup_logs_task()
         return jsonify({
             'success': True,
             'task_id': task.id,
@@ -273,7 +273,7 @@ def cleanup_logs():
 def get_task_status(task_id):
     """获取任务状态."""
     try:
-        status = huey_task_service.get_task_status(task_id)
+        status = huey_service.get_task_status(task_id)
         return jsonify({'success': True, **status})
     except Exception as e:
         logger.error(f"Failed to get task status: {e}")

@@ -14,13 +14,13 @@ def get_utc_now() -> datetime:
 
 def to_local_time(utc_datetime: datetime | None) -> datetime | None:
     """
-    将UTC时间转换为本地时间.
+    将UTC时间转换为本地时间（不带时区信息）.
 
     Args:
         utc_datetime: UTC时间对象
 
     Returns:
-        datetime: 本地时间对象，如果输入为None则返回None
+        datetime: 本地时间对象（不带时区信息），如果输入为None则返回None
     """
     if utc_datetime is None:
         return None
@@ -29,8 +29,9 @@ def to_local_time(utc_datetime: datetime | None) -> datetime | None:
     if utc_datetime.tzinfo is None:
         utc_datetime = utc_datetime.replace(tzinfo=UTC)
 
-    # 转换为本地时间
-    return utc_datetime.astimezone()
+    # 转换为本地时间并移除时区信息
+    local_datetime = utc_datetime.astimezone()
+    return local_datetime.replace(tzinfo=None)
 
 
 def format_datetime(

@@ -9,9 +9,20 @@
 ### 组件说明
 
 1. **Redis** - 任务队列和结果存储
-2. **Huey Worker** - 异步任务执行器
+2. **Huey Worker** - 异步任务执行器，包括手动任务和定时任务
 3. **Web服务** - 接收任务请求并返回task_id
-4. **Scheduler** - 定时任务调度器
+
+### 定时任务调度
+
+Huey Worker 内置了一个定时任务分发器（`schedule_dispatcher_task`），每分钟检查一次数据库中的任务配置，根据 cron 表达式自动触发相应的采集任务：
+
+- **ranking_works** - 采集排行榜作品
+- **follow_new_follow** - 同步关注列表
+- **follow_new_works** - 采集关注用户新作品
+- **update_artworks** - 更新作品元数据
+- **clean_up_logs** - 清理旧日志
+
+定时任务的配置存储在数据库的 `scheduler_config` 表中，可通过 Web 界面动态修改。
 
 ### 工作流程
 
@@ -42,7 +53,7 @@ redis:
 
 huey:
   image: pixcollector:latest
-  command: python huey_run.py
+  command: python run_huey.py
   # Huey Worker进程，执行异步任务
 ```
 

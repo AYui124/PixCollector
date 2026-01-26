@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, current_app, jsonify, request
 
 from services import services
+from utils.time_utils import format_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,8 @@ def get_public_stats():
     )
     last_collect_time = None
     if last_artworks:
-        last_collect_time = last_artworks[0].created_at.strftime(
-            '%Y-%m-%d %H:%M:%S'
+        last_collect_time = format_datetime(
+            last_artworks[0].created_at
         )
 
     # 图表数据 - R18占比

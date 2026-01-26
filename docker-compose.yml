@@ -36,25 +36,6 @@ services:
       - redis
     networks:
       - pix-network
-  scheduler:
-    image: pixcollector:latest
-    container_name: pixcollector-scheduler
-    env_file:
-      - app.env
-    environment:
-      TZ: Asia/Shanghai
-      PYTHONUNBUFFERED: "1"
-      # ALL_PROXY: "socks5://172.17.0.1:1081"
-      # HTTP_PROXY: "http://72.17.0.1:1081"
-      # HTTPS_PROXY: "http://72.17.0.1:1081"
-    volumes:
-      - ./logs/job:/app/logs
-    restart: unless-stopped
-    command: python run_scheduler.py
-    depends_on:
-      - redis
-    networks:
-      - pix-network
   huey:
     image: pixcollector:latest
     container_name: pixcollector-huey

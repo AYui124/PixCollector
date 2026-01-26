@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Huey任务队列Worker运行脚本（生产环境）."""
+"""Huey任务队列Worker运行脚本."""
 import logging
 import os
 import signal
@@ -7,7 +7,7 @@ import sys
 
 from huey.consumer import Consumer
 
-import services.huey_task_service
+import services.huey_service
 from config import Config
 from core.huey import huey
 
@@ -38,9 +38,11 @@ def main():
     logger.info("Starting Huey worker...")
     logger.info(f"Worker type: {Config.HUEY_WORKER_TYPE}")
     logger.info(f"Worker count: {Config.HUEY_WORKER_COUNT}")
-    logger.info(f"Task timeout: {Config.HUEY_TASK_TIMEOUT}s")
-    logger.info(f"Result timeout: {Config.HUEY_RESULT_TIMEOUT}s")
-    services.huey_task_service.init()
+
+    # 导入 huey_service 以注册所有任务
+    services.huey_service.init()
+    logger.info("huey_service imported and tasks registered")
+
     # 启动Consumer
     consumer = Consumer(
         huey,
@@ -54,6 +56,7 @@ def main():
         periodic=True,
         check_worker_health=True,
     )
+    logger.info("Consumer created successfully")
 
     # 优雅退出处理
     def signal_handler(sig, frame):

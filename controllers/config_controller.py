@@ -4,7 +4,6 @@ import logging
 from flask import Blueprint, jsonify, request
 from flask_login import login_required
 
-from scheduler import task_scheduler
 from services import services
 
 logger = logging.getLogger(__name__)
@@ -131,21 +130,3 @@ def update_scheduler_config():
         'success': True,
         'message': 'Scheduler configuration updated successfully'
     })
-
-
-@config_api.route('/scheduler/refresh', methods=['POST'])
-@login_required
-def refresh_scheduler():
-    """刷新调度器任务."""
-    try:
-        task_scheduler.refresh_jobs()
-        return jsonify({
-            'success': True,
-            'message': 'Scheduler jobs refreshed successfully'
-        })
-    except Exception as e:
-        logger.error(f"Failed to refresh scheduler jobs: {e}")
-        return jsonify({
-            'success': False,
-            'message': f'Failed to refresh scheduler: {str(e)}'
-        }), 500
