@@ -21,7 +21,7 @@ def _get_pixiv_service():
     return services.pixiv
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def collect_daily_rank_task() -> dict:
     """
     异步采集每日排行榜.
@@ -44,7 +44,7 @@ def collect_daily_rank_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def collect_weekly_rank_task() -> dict:
     """
     异步采集每周排行榜.
@@ -67,7 +67,7 @@ def collect_weekly_rank_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def collect_monthly_rank_task() -> dict:
     """
     异步采集每月排行榜.
@@ -90,7 +90,7 @@ def collect_monthly_rank_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def sync_follows_task() -> dict:
     """
     异步同步关注列表.
@@ -113,7 +113,7 @@ def sync_follows_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def collect_user_artworks_task(
     user_id: int,
 ) -> dict:
@@ -154,7 +154,7 @@ def collect_user_artworks_task(
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def collect_all_follow_artworks_task() -> dict:
     """
     异步采集所有关注用户的作品（初始全量）.
@@ -177,7 +177,7 @@ def collect_all_follow_artworks_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def collect_follow_new_works_task() -> dict:
     """
     异步采集关注用户新作品.
@@ -223,7 +223,7 @@ def update_artworks_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 def cleanup_logs_task() -> dict:
     """
     异步清理旧日志.
@@ -342,7 +342,7 @@ def _update_job_run_time(job_id: str) -> None:
         logger.error(f"Failed to update run time for {job_id}: {e}")
 
 
-@huey.periodic_task(crontab())
+@huey.periodic_task(crontab(), expires=Config.HUEY_RESULT_TIMEOUT)
 def schedule_dispatcher_task():
     """
     动态定时任务分发器 - 每分钟执行一次.
