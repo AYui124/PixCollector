@@ -164,7 +164,8 @@ class ArtworkRepository(BaseRepository[Artwork]):
         post_date_start: Any | None = None,
         post_date_end: Any | None = None,
         tags_filter: str | None = None,
-        tags_match: str = 'or'
+        tags_match: str = 'or',
+        illust_id_filter: int | None = None
     ) -> Pagination:
         """
         搜索作品（支持多条件过滤）.
@@ -181,6 +182,7 @@ class ArtworkRepository(BaseRepository[Artwork]):
             post_date_end: 发布结束日期
             tags_filter: 标签过滤（逗号分隔）
             tags_match: 标签匹配方式（or/and）
+            illust_id_filter: 作品ID过滤
 
         Returns:
             分页结果
@@ -201,6 +203,10 @@ class ArtworkRepository(BaseRepository[Artwork]):
             # R18过滤
             if is_r18_filter is not None:
                 query = query.filter(Artwork.is_r18 == is_r18_filter)
+
+            # 作品ID筛选
+            if illust_id_filter:
+                query = query.filter(Artwork.illust_id == illust_id_filter)
 
             # 作者名筛选
             if author_name_filter:

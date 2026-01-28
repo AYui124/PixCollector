@@ -65,7 +65,6 @@ class BaseRepository(Generic[T]):
             instance = self.model_class(**kwargs)
             session.add(instance)
             session.flush()
-            session.refresh(instance)
             return instance
 
     def update(self, id: int, **kwargs: Any) -> T | None:
@@ -88,7 +87,6 @@ class BaseRepository(Generic[T]):
                 for key, value in kwargs.items():
                     setattr(instance, key, value)
                 session.flush()
-                session.refresh(instance)
                 return instance
             return None
 

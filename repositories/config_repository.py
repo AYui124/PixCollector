@@ -44,11 +44,12 @@ class ConfigRepository(BaseRepository[SystemConfig]):
             配置实例或None
         """
         with self.get_session() as session:
-            return session.execute(
+            config: SystemConfig | None = session.execute(
                 select(SystemConfig).where(
                     SystemConfig.config_key == config_key
                 )
             ).scalar_one_or_none()
+            return config
 
     def get_all_config_dict(self) -> dict[str, str | None]:
         """
@@ -92,7 +93,6 @@ class ConfigRepository(BaseRepository[SystemConfig]):
                 config.config_value = value
                 config.value_type = value_type
                 session.flush()
-                session.refresh(config)
                 return config
             else:
                 # 创建新配置时同时设置 value_type
@@ -106,5 +106,4 @@ class ConfigRepository(BaseRepository[SystemConfig]):
                 )
                 session.add(new_config)
                 session.flush()
-                session.refresh(new_config)
                 return new_config

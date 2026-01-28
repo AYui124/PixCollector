@@ -581,7 +581,7 @@ class PixivService:
                         if rank_date else None
                     ),
                     'post_date': post_date,
-                    'tags': ','.join(tags),
+                    'tags': tags,
                     'is_r18': bool(is_r18),
                     'type': artwork_type,
                     'is_valid': bool(is_valid),
@@ -617,7 +617,7 @@ class PixivService:
                     else None
                 ),
                 'post_date': post_date,
-                'tags': ','.join(tags),
+                'tags': tags,
                 'is_r18': bool(is_r18),
                 'type': artwork_type,
                 'is_valid': bool(is_valid),
@@ -1335,14 +1335,19 @@ class PixivService:
             )
 
             updated_count = 0
-
+            processed_count = 0
             for artwork in artworks:
                 try:
+                    processed_count += 1
                     # 获取作品详情
                     detail = self.client.get_illust_detail(artwork.illust_id)
-                    self.limiter.wait()
+                    self.limiter.fast_wait(0.1, 0.5)
 
                     if not detail or not hasattr(detail, 'illust'):
+                        logger.info(
+                            f'{artwork.illust_id} is not avialable '
+                            'on pixiv now'
+                        )
                         continue
 
                     item = detail.illust
@@ -1368,6 +1373,12 @@ class PixivService:
                             last_updated_at=get_utc_now()
                         )
                         updated_count += 1
+                    if processed_count % 10 == 0:
+                        self.limiter.wait()
+                        logger.info(
+                            'update_artworks progress:%.2f%%',
+                            processed_count / len(artworks) * 100
+                        )
 
                 except Exception as e:
                     logger.error(

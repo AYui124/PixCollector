@@ -8,6 +8,7 @@ from huey import crontab
 from config import Config
 from core.huey import huey
 from services import services
+from utils.task_tracker import track_task
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,8 @@ def _get_pixiv_service():
     return services.pixiv
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def collect_daily_rank_task() -> dict:
     """
     异步采集每日排行榜.
@@ -44,7 +46,8 @@ def collect_daily_rank_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def collect_weekly_rank_task() -> dict:
     """
     异步采集每周排行榜.
@@ -67,7 +70,8 @@ def collect_weekly_rank_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def collect_monthly_rank_task() -> dict:
     """
     异步采集每月排行榜.
@@ -90,7 +94,8 @@ def collect_monthly_rank_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def sync_follows_task() -> dict:
     """
     异步同步关注列表.
@@ -113,7 +118,8 @@ def sync_follows_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def collect_user_artworks_task(
     user_id: int,
 ) -> dict:
@@ -154,7 +160,8 @@ def collect_user_artworks_task(
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def collect_all_follow_artworks_task() -> dict:
     """
     异步采集所有关注用户的作品（初始全量）.
@@ -177,7 +184,8 @@ def collect_all_follow_artworks_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def collect_follow_new_works_task() -> dict:
     """
     异步采集关注用户新作品.
@@ -201,6 +209,7 @@ def collect_follow_new_works_task() -> dict:
 
 
 @huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def update_artworks_task() -> dict:
     """
     异步更新作品元数据.
@@ -223,7 +232,8 @@ def update_artworks_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
-@huey.task()
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def cleanup_logs_task() -> dict:
     """
     异步清理旧日志.
@@ -342,7 +352,8 @@ def _update_job_run_time(job_id: str) -> None:
         logger.error(f"Failed to update run time for {job_id}: {e}")
 
 
-@huey.periodic_task(crontab())
+@huey.periodic_task(crontab(), expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def schedule_dispatcher_task():
     """
     动态定时任务分发器 - 每分钟执行一次.

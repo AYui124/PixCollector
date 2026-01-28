@@ -23,6 +23,7 @@ def get_artworks():
     collect_type_param = request.args.get('collect_type', 'all', type=str)
     is_r18_param = request.args.get('is_r18', 'all', type=str)
     author_name = request.args.get('author', '', type=str)
+    illust_id = request.args.get('illust_id', '', type=str)
     is_valid_param = request.args.get('is_valid', 'all', type=str)
     post_date_start = request.args.get('post_date_start', '', type=str)
     post_date_end = request.args.get('post_date_end', '', type=str)
@@ -63,6 +64,12 @@ def get_artworks():
     # 标签过滤
     tags_filter = tags_param if tags_param else None
 
+    # 作品ID过滤
+    illust_id_filter: int | None = None
+    if illust_id:
+        with suppress(ValueError):
+            illust_id_filter = int(illust_id)
+
     # 调用Service
     pagination = services.artwork.paginate_artworks(
         page=page,
@@ -75,7 +82,8 @@ def get_artworks():
         post_date_start=start_date,
         post_date_end=end_date,
         tags_filter=tags_filter,
-        tags_match=tags_match
+        tags_match=tags_match,
+        illust_id_filter=illust_id_filter
     )
 
     return jsonify({

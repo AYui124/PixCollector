@@ -78,6 +78,10 @@ class RateLimiter:
 
         self.last_request_time = datetime.now()
 
+    def fast_wait(self, delay_min: float, delay_max: float) -> None:
+        delay = random.uniform(delay_min, delay_max)
+        time.sleep(delay)
+
     def handle_error(
         self, error_code: int | None = None
     ) -> None:

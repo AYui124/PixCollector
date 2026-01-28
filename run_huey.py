@@ -2,7 +2,6 @@
 """Huey任务队列Worker运行脚本."""
 import logging
 import os
-import signal
 import sys
 
 from huey.consumer import Consumer
@@ -58,23 +57,12 @@ def main():
     )
     logger.info("Consumer created successfully")
 
-    # 优雅退出处理
-    def signal_handler(sig, frame):
-        """处理终止信号."""
-        logger.info("Shutting down Huey worker...")
-        consumer.shutdown()
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
     # 保持进程运行
+    logger.info("Huey worker started, press Ctrl+C to stop")
     try:
-        logger.info("Huey worker started, press Ctrl+C to stop")
         consumer.run()
-    except KeyboardInterrupt:
-        logger.info("Shutting down Huey worker...")
-        consumer.shutdown()
+    except Exception:
+        consumer.stop()
 
 
 if __name__ == '__main__':
