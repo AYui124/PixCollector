@@ -207,7 +207,6 @@ class FollowRepository(BaseRepository[Follow]):
             if instance:
                 instance.last_artwork_date = post_date
                 session.flush()
-                session.refresh(instance)
                 return instance
             return None
 
@@ -238,7 +237,6 @@ class FollowRepository(BaseRepository[Follow]):
                 if first_collect_date:
                     instance.first_collect_date = first_collect_date
                 session.flush()
-                session.refresh(instance)
                 return instance
             return None
 

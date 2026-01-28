@@ -78,7 +78,8 @@ class ArtworkService:
         post_date_start: Any | None = None,
         post_date_end: Any | None = None,
         tags_filter: str | None = None,
-        tags_match: str = 'or'
+        tags_match: str = 'or',
+        illust_id_filter: int | None = None
     ) -> Pagination:
         """
         分页获取作品.
@@ -95,6 +96,7 @@ class ArtworkService:
             post_date_end: 发布结束日期
             tags_filter: 标签过滤（逗号分隔）
             tags_match: 标签匹配方式（or/and）
+            illust_id_filter: 作品ID过滤
 
         Returns:
             分页结果
@@ -110,7 +112,8 @@ class ArtworkService:
             post_date_start=post_date_start,
             post_date_end=post_date_end,
             tags_filter=tags_filter,
-            tags_match=tags_match
+            tags_match=tags_match,
+            illust_id_filter=illust_id_filter
         )
 
     def get_random_artworks(
@@ -138,6 +141,7 @@ class ArtworkService:
             tags_filter=tags_filter,
             tags_match=tags_match
         )
+
         return [
             {
                 'illust_id': artwork.illust_id,
@@ -149,7 +153,7 @@ class ArtworkService:
                 'page': f'{artwork.page_index + 1} / {artwork.page_count}',
                 'total_bookmarks': artwork.total_bookmarks,
                 'total_view': artwork.total_view,
-                'tags': artwork.tags,
+                'tags': artwork.tags if isinstance(artwork.tags, list) else [],
                 'type': artwork.type,
                 'is_r18': artwork.is_r18
             }

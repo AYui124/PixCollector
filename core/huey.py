@@ -11,6 +11,6 @@ huey = RedisExpireHuey(
     db=int(Config.HUEY_REDIS_DB),
     password=Config.HUEY_REDIS_PASSWORD,
     always_eager=False,  # 生产环境设置为False，开发环境可以设为True同步执行
-    result=True,  # 存储任务结果
+    results=True,  # 存储任务结果
     store_none=False,  # 不存储None值
 )

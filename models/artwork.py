@@ -1,7 +1,7 @@
 """作品模型."""
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import BaseModel
@@ -47,7 +47,7 @@ class Artwork(BaseModel):
     rank_date: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True
     )
-    tags: Mapped[str] = mapped_column(Text, default='', nullable=False)
+    tags: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     is_r18: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
@@ -77,6 +77,18 @@ class Artwork(BaseModel):
 
     def to_dict(self) -> dict:
         """转换为字典."""
+        # tags字段已经是JSON类型，直接使用，确保类型安全
+        tags_list = []
+        if self.tags:
+            if isinstance(self.tags, list):
+                tags_list = self.tags
+            else:
+                # 向后兼容：如果不是列表类型，尝试转换
+                try:
+                    tags_list = list(self.tags)
+                except (TypeError, ValueError):
+                    tags_list = []
+
         return {
             'id': self.id,
             'illust_id': self.illust_id,
@@ -91,7 +103,7 @@ class Artwork(BaseModel):
             'total_view': self.total_view,
             'rank': self.rank,
             'rank_date': format_datetime(self.rank_date, '%Y-%m-%d'),
-            'tags': self.tags.split(',') if self.tags else [],
+            'tags': tags_list,
             'is_r18': self.is_r18,
             'type': self.type,
             'collect_type': self.collect_type,
