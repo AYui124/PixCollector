@@ -31,7 +31,7 @@ jobs:
       - name: Set image tags
         id: vars
         run: |
-          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY}" >> $GITHUB_OUTPUT
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
           echo "SHA_TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
       # 4. Build Docker image（latest + commit sha）
