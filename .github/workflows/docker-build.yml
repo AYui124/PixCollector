@@ -33,12 +33,14 @@ jobs:
         run: |
           echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
           echo "SHA_TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       # 4. Build Docker image（latest + commit sha）
       - name: Build Docker image
         run: |
           docker build \
             -t ${{ steps.vars.outputs.IMAGE }}:latest \
+            -t ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} \
             -t ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.SHA_TAG }} \
             .
 
@@ -46,4 +48,5 @@ jobs:
       - name: Push Docker image
         run: |
           docker push ${{ steps.vars.outputs.IMAGE }}:latest
+          docker push ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
           docker push ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.SHA_TAG }}
