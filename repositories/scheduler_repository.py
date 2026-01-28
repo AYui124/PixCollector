@@ -46,11 +46,12 @@ class SchedulerRepository(BaseRepository[SchedulerConfig]):
             配置实例或None
         """
         with self.get_session() as session:
-            return session.execute(
+            config: SchedulerConfig | None = session.execute(
                 select(SchedulerConfig).where(
                     SchedulerConfig.collect_type == collect_type
                 )
             ).scalar_one_or_none()
+            return config
 
     def get_all(self, limit: int | None = None) -> list[SchedulerConfig]:
         """
