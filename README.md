@@ -52,36 +52,7 @@ cp .env.example .env
 ```
 
 编辑 `.env` 文件：
-
-```env
-# Flask配置
-FLASK_SECRET_KEY=your-secret-key-here-change-this
-FLASK_PORT=5000
-
-# 管理员账户（首次启动时使用）
-ADMIN_USER='admin'
-ADMIN_PWD='your-strong-password'
-
-# Pixiv图片代理配置
-PIXIV_PROXY_URL=https://i.pixiv.re
-
-# MySQL数据库配置
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_DATABASE=pixcollector
-MYSQL_USER=root
-MYSQL_PASSWORD=your-mysql-password
-
-# Huey配置
-HUEY_REDIS_HOST=localhost
-HUEY_REDIS_PORT=6379
-HUEY_REDIS_DB=0
-HUEY_REDIS_PASSWORD=
-HUEY_TASK_TIMEOUT=86400
-HUEY_RESULT_TIMEOUT=604800
-HUEY_WORKER_TYPE=thread
-HUEY_WORKER_COUNT=2
-```
+具体参数说明参考环境变量一节
 
 #### 4. 创建数据库
 
@@ -158,7 +129,10 @@ curl -X POST http://127.0.0.1:5000/api/init
 
 ## Docker部署
 
+### 镜像拉取或构建
+
 项目已提供Dockerfile可以自行build
+**如自行build，需修改docker-compose.yml的image，默认为ghcr.io仓库**
 ```bash
 docker build -t pixcollector:latest .
 ```
@@ -170,14 +144,15 @@ docker build -t pixcollector:latest .
 ### 使用Docker Compose
 
 1. 复制`env.example`为`app.env` 文件（修改见上文）
-2. 修改docker-compose.yml（非必须）
+2. 修改docker-compose.yml
+   默认带redis但没有mysql，按自己环境调整修改
 3. 启动服务
    ```bash
    docker-compose up -d
    ```
 4. 初始化数据库
    ```bash
-   docker-compose exec app python migrate.py
+   docker-compose exec web python migrate.py
    ```
 5. 访问应用：`http://your-ip:5000`
 
