@@ -1,0 +1,52 @@
+name: Build & Push Docker Image to GHCR
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 拉代码
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 2. 登录 GHCR
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. 生成镜像 tag
+      - name: Set image tags
+        id: vars
+        run: |
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+          echo "SHA_TAG=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      # 4. Build Docker image（latest + commit sha）
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ steps.vars.outputs.IMAGE }}:latest \
+            -t ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} \
+            -t ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.SHA_TAG }} \
+            .
+
+      # 5. Push 到 GHCR
+      - name: Push Docker image
+        run: |
+          docker push ${{ steps.vars.outputs.IMAGE }}:latest
+          docker push ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }}
+          docker push ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.SHA_TAG }}

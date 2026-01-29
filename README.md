@@ -16,13 +16,9 @@ Pixiv图片采集系统 - 基于Python Flask的Pixiv图片自动采集、管理�
 - **后端框架**: Python 3.12+ + Flask 3.0
 - **数据库ORM**: SQLAlchemy 3.1
 - **数据库**: MySQL 5.7+ / PyMySQL 1.1.0
-- **用户认证**: Flask-Login 0.6.3
 - **异步及任务**: huey + croniter(解析cron表达式)
 - **Pixiv API**: pixivpy3 3.7.5
 - **前端框架**: Bulma CSS + Animate.css + Jinja2模板引擎
-- **数据库迁移**: Flask-Migrate 4.0.5
-- **密码加密**: Werkzeug 3.0.1 + Cryptography 46.0.3
-- **环境变量**: python-dotenv 1.0.0
 
 ## 快速开始
 
@@ -116,7 +112,7 @@ python run_app.py # api及web
 python run_huey.py # 异步任务
 ```
 
-应用将在 `http://localhost:5000` 启动。
+flask将监听5000端口，访问 `http://127.0.0.1:5000` 即可。
 
 #### 7. 系统初始化
 
@@ -127,7 +123,7 @@ python run_huey.py # 异步任务
 ```bash
 curl -X POST http://127.0.0.1:5000/api/init
 ```
-3. 访问登录页面：`http://localhost:5000/login`
+3. 访问登录页面：`http://127.0.0.1:5000/login`
 4. 进入"配置"页面
 5. 配置Pixiv API Token（详见下文）
 
@@ -162,10 +158,15 @@ curl -X POST http://127.0.0.1:5000/api/init
 
 ## Docker部署
 
-image未上传仓库，项目已提供dockerfile需自行build
+项目已提供Dockerfile可以自行build
 ```bash
 docker build -t pixcollector:latest .
 ```
+或者从本项目拉取
+``` bash
+ docker pull ghcr.io/ayui124/pixcollector:latest
+```
+
 ### 使用Docker Compose
 
 1. 复制`env.example`为`app.env` 文件（修改见上文）
@@ -178,7 +179,7 @@ docker build -t pixcollector:latest .
    ```bash
    docker-compose exec app python migrate.py
    ```
-5. 访问应用：`http://localhost:5000`
+5. 访问应用：`http://your-ip:5000`
 
 
 ## 配置说明
