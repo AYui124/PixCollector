@@ -7,6 +7,7 @@ from sqlalchemy import delete, func, or_, select
 from models.artwork import Artwork
 from repositories.base_repository import BaseRepository
 from utils.pagination import Pagination
+from utils.time_utils import get_utc_now
 
 
 class ArtworkRepository(BaseRepository[Artwork]):
@@ -473,10 +474,14 @@ class ArtworkRepository(BaseRepository[Artwork]):
         Returns:
             作品实例列表
         """
+        update_date = get_utc_now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         with self.get_session() as session:
             query = select(Artwork).where(
                 Artwork.is_valid,
-                Artwork.post_date >= post_date_start
+                Artwork.post_date >= post_date_start,
+                Artwork.last_updated_at < update_date
             ).order_by(
                 Artwork.last_updated_at.asc()
             ).limit(per_page)

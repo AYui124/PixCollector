@@ -1333,7 +1333,10 @@ class PixivService:
                 post_date_start=cutoff_date,
                 per_page=update_max_per_run
             )
-
+            logger.info(
+                f'update artworks cutoff_date={cutoff_date} '
+                f'find total:{len(artworks)} need to update'
+            )
             updated_count = 0
             invalid_count = 0
             processed_count = 0
@@ -1342,11 +1345,16 @@ class PixivService:
             invalid_action = self.get_config_value(
                 'invalid_artwork_action', 'mark'
             )
-
+            logger.info(
+                f'update artworks invalid_action={invalid_action}'
+            )
             for artwork in artworks:
                 try:
                     processed_count += 1
                     # 获取作品详情
+                    logger.debug(
+                        f'update artwork={artwork.illust_id}-{artwork.title}'
+                    )
                     detail = self.client.get_illust_detail(artwork.illust_id)
                     self.limiter.fast_wait(0.1, 0.5)
 
