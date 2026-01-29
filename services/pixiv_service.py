@@ -1335,7 +1335,14 @@ class PixivService:
             )
 
             updated_count = 0
+            invalid_count = 0
             processed_count = 0
+
+            # 获取失效作品处理策略
+            invalid_action = self.get_config_value(
+                'invalid_artwork_action', 'mark'
+            )
+
             for artwork in artworks:
                 try:
                     processed_count += 1
@@ -1345,9 +1352,33 @@ class PixivService:
 
                     if not detail or not hasattr(detail, 'illust'):
                         logger.info(
-                            f'{artwork.illust_id} is not avialable '
+                            f'{artwork.illust_id} is not available '
                             'on pixiv now'
                         )
+                        # 根据配置处理失效作品
+                        if invalid_action == 'delete':
+                            # 删除该作品的所有页
+                            deleted = self._artwork_repo.delete_by_illust_id(
+                                artwork.illust_id
+                            )
+                            if deleted:
+                                invalid_count += 1
+                                logger.info(
+                                    f'Deleted {deleted} pages for '
+                                    f'artwork {artwork.illust_id}'
+                                )
+                        else:
+                            # 默认策略：标记为失效
+                            marked = self._artwork_repo.mark_illust_invalid(
+                                artwork.illust_id,
+                                '作品已从Pixiv删除'
+                            )
+                            if marked:
+                                invalid_count += 1
+                                logger.info(
+                                    f'Marked {marked} pages as invalid for '
+                                    f'artwork {artwork.illust_id}'
+                                )
                         continue
 
                     item = detail.illust
@@ -1387,16 +1418,25 @@ class PixivService:
                     )
                     continue
 
+            # 构建日志消息
+            message_parts = [f'Updated {updated_count} artworks']
+            if invalid_count > 0:
+                message_parts.append(
+                    f', {invalid_count} invalid artworks '
+                    f'({invalid_action}ed)'
+                )
+
             # 更新日志
             self._collection_repo.update_success(
                 log.id,
-                f'Updated {updated_count} artworks',
-                updated_count
+                ', '.join(message_parts),
+                updated_count + invalid_count
             )
 
             return {
                 'success': True,
-                'updated_count': updated_count
+                'updated_count': updated_count,
+                'invalid_count': invalid_count
             }
 
         except Exception as e:

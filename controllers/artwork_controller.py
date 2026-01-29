@@ -159,7 +159,7 @@ def invalidate_artwork(artwork_id):
         if not reason:
             reason = 'Not like'
 
-        success = services.artwork.mark_invalid(artwork_id, reason)
+        success = services.artwork.mark_page_invalid(artwork_id, reason)
         if success:
             return jsonify({
                 'success': True,
@@ -192,7 +192,7 @@ def invalidate_artwork_by_illust_id(illust_id):
         if not reason:
             reason = 'Not like'
 
-        count = services.artwork.mark_invalid_by_illust_id(illust_id, reason)
+        count = services.artwork.mark_illust_invalid(illust_id, reason)
         if count > 0:
             return jsonify({
                 'success': True,

@@ -166,6 +166,23 @@
             padding-left: 1rem;
             padding-right: 1rem;
         }
+        
+        /* 自定义无限旋转动画（扩展 Animate.css） */
+        @keyframes animate__spin {
+            from { 
+                transform: rotate(0deg); 
+            }
+            to { 
+                transform: rotate(360deg); 
+            }
+        }
+
+        .animate__spin {
+            animation-name: animate__spin;
+            animation-duration: 1s;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
     </style>
 </head>
 <body>

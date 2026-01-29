@@ -160,7 +160,7 @@ class ArtworkService:
             for artwork in artworks
         ]
 
-    def mark_invalid(
+    def mark_page_invalid(
         self, artwork_id: int, reason: str
     ) -> bool:
         """
@@ -173,10 +173,10 @@ class ArtworkService:
         Returns:
             是否成功
         """
-        result = self.artwork_repo.mark_invalid(artwork_id, reason)
+        result = self.artwork_repo.mark_page_invalid(artwork_id, reason)
         return result is not None
 
-    def mark_invalid_by_illust_id(
+    def mark_illust_invalid(
         self, illust_id: int, reason: str
     ) -> int:
         """
@@ -189,7 +189,7 @@ class ArtworkService:
         Returns:
             更新的作品数量
         """
-        return self.artwork_repo.mark_invalid_by_illust_id(illust_id, reason)
+        return self.artwork_repo.mark_illust_invalid(illust_id, reason)
 
     def get_dashboard_stats(self) -> dict[str, int]:
         """

@@ -45,6 +45,7 @@ class Config:
 
     # Flask配置
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', '')
+    ENV = os.getenv('ENV', 'Prod').lower()
     DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
     # 数据库配置

@@ -276,34 +276,41 @@
         document.addEventListener('DOMContentLoaded', function() {
             const loginButton = document.getElementById('login-button');
             const form = document.querySelector('form');
+            let isLoading = false;
             
-            form.addEventListener('submit', function(e) {
-                // 添加加载动画
+            form.addEventListener('submit', async function(e) {
+                if (isLoading) return;
+                isLoading = true;
+                
+                // 保存原始文本
+                const originalText = loginButton.innerHTML;
+                
+                // 添加加载状态
+                loginButton.disabled = true;
                 loginButton.classList.add('animate__animated', 'animate__pulse');
                 loginButton.innerHTML = `
-                    <span style="display: inline-block; animation: spin 1s linear infinite;">
-                        <svg style="width: 1.25rem; height: 1.25rem; animation: spin 1s linear infinite;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4 A8 8 0 1 1 6.343 6.343 M8 6 H6 V8" />
+                    <span class="animate__animated animate__spin" style="display: inline-flex; align-items: center;">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                     </span>
                 `;
                 
-                // 3秒后移除动画（无论成功失败）
+                // 等待表单提交完成（页面会跳转或重新加载）
+                // 设置超时作为备份
                 setTimeout(function() {
+                    if (isLoading) {
+                        resetButton();
+                    }
+                }, 10000); // 10秒超时
+                
+                function resetButton() {
+                    isLoading = false;
+                    loginButton.disabled = false;
                     loginButton.classList.remove('animate__animated', 'animate__pulse');
-                    loginButton.innerHTML = '登录';
-                }, 3000);
-            });
-            
-            // 添加旋转动画样式
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
+                    loginButton.innerHTML = originalText;
                 }
-            `;
-            document.head.appendChild(style);
+            });
         });
     </script>
     

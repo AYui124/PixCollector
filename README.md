@@ -187,6 +187,7 @@ docker build -t pixcollector:latest .
 
 | 变量名 | 说明 | 默认值 | 必需 |
 |--------|------|--------|------|
+| ENV | 环境类型 | Prod | 否 |
 | FLASK_SECRET_KEY | Flask会话密钥 | - | 是 |
 | FLASK_PORT | 应用端口 | 5000 | 否 |
 | ADMIN_USER | 管理员用户名 | admin | 否 |
