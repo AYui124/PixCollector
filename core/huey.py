@@ -5,7 +5,7 @@ from config import Config
 
 # 创建Huey实例
 huey = RedisExpireHuey(
-    'pixcollector',
+    f'pixcollector-{Config.ENV}',
     host=Config.HUEY_REDIS_HOST,
     port=int(Config.HUEY_REDIS_PORT),
     db=int(Config.HUEY_REDIS_DB),

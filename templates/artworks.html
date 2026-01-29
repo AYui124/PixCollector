@@ -843,7 +843,7 @@ async function confirmInvalidate() {
         const data = await response.json();
         
         if (data.success) {
-            notify(invalidateAll ? `已删除${data.count || 1}页为废弃` : message, 'success');
+            notify(data.message);
             closeInvalidateModal();
             // 刷新当前页
             loadArtworks(currentPage);

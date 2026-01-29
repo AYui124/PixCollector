@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any, ClassVar
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 
 from models.artwork import Artwork
 from repositories.base_repository import BaseRepository
@@ -338,7 +338,7 @@ class ArtworkRepository(BaseRepository[Artwork]):
                 'today_updates': today_updates
             }
 
-    def mark_invalid(
+    def mark_page_invalid(
         self, artwork_id: int, reason: str
     ) -> Artwork | None:
         """
@@ -357,7 +357,7 @@ class ArtworkRepository(BaseRepository[Artwork]):
             error_message=reason
         )
 
-    def mark_invalid_by_illust_id(
+    def mark_illust_invalid(
         self, illust_id: int, reason: str
     ) -> int:
         """
@@ -380,6 +380,30 @@ class ArtworkRepository(BaseRepository[Artwork]):
                 artwork.is_valid = False
                 artwork.error_message = reason
                 count += 1
+
+            return count
+
+    def delete_by_illust_id(self, illust_id: int) -> int:
+        """
+        删除某个作品的所有页.
+
+        Args:
+            illust_id: 作品ID
+
+        Returns:
+            删除的作品数量
+        """
+        with self.get_session() as session:
+            # 先获取要删除的数量
+            query = select(func.count()).select_from(Artwork).where(
+                Artwork.illust_id == illust_id
+            )
+            count = session.execute(query).scalar() or 0
+
+            # 执行删除
+            session.execute(
+                delete(Artwork).where(Artwork.illust_id == illust_id)
+            )
 
             return count
 

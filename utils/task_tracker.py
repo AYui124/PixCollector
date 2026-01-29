@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from functools import wraps
 
+from config import Config
 from core.huey import huey
 
 WORKER_ID = os.getpid()
@@ -25,7 +26,7 @@ def track_task(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        key = f"huey:task:track:running:{fn.__name__}:{WORKER_ID}"
+        key = f"huey-{Config.ENV}:task:track:running:{fn.__name__}:{WORKER_ID}"
         # 记录任务开始信息
         _put_data(key, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
@@ -52,7 +53,7 @@ def dump_running_tasks():
     if _shutdown_called:
         return
     _shutdown_called = True
-    keys = search("huey:task:track:running:*")
+    keys = search(f"huey-{Config.ENV}:task:track:running:*")
     logger.info("Check running tasks...")
     count = 0
     for k in keys:

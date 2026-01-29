@@ -16,7 +16,7 @@ services:
       timeout: 3s
       retries: 3
   web:
-    image: pixcollector:latest
+    image: ghcr.io/ayui124/pixcollector:latest
     container_name: pixcollector-web
     ports:
       - "5000:5000"
@@ -37,7 +37,7 @@ services:
     networks:
       - pix-network
   huey:
-    image: pixcollector:latest
+    image: ghcr.io/ayui124/pixcollector:latest
     container_name: pixcollector-huey
     env_file:
       - app.env

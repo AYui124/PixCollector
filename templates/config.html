@@ -49,6 +49,98 @@
         align-items: center;
         margin-bottom: 1.5rem;
     }
+
+    .cron-tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: help;
+    }
+
+    .cron-tooltip .tooltip-text {
+        visibility: hidden;
+        width: 320px;
+        background-color: #374151;
+        color: #fff;
+        text-align: left;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        position: absolute;
+        z-index: 1000;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .cron-tooltip .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #374151 transparent transparent transparent;
+    }
+
+    .cron-tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .tooltip-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #f3f4f6;
+    }
+
+    .tooltip-examples {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .tooltip-example {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        border-bottom: 1px solid #4b5563;
+    }
+
+    .tooltip-example:last-child {
+        border-bottom: none;
+    }
+
+    .tooltip-example-code {
+        font-family: 'Courier New', monospace;
+        background: #1f2937;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-size: 0.8125rem;
+    }
+
+    .tooltip-example-desc {
+        color: #d1d5db;
+    }
+
+    .info-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.25rem;
+        height: 1.25rem;
+        background: #e0e7ff;
+        color: #4f46e5;
+        border-radius: 50%;
+        margin-left: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        vertical-align: middle;
+    }
 </style>
 
 <div style="margin-bottom: 1.5rem; max-width: 140rem; margin-left: auto; margin-right: auto; padding: 0 1rem;">
@@ -89,12 +181,12 @@
 
                     <div class="columns is-mobile">
                         <div class="column">
-                            <button onclick="saveTokens()" class="save-button" style="background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); color: white;">
+                            <button onclick="saveTokens(event)" class="save-button" style="background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); color: white;">
                                 保存Token
                             </button>
                         </div>
                         <div class="column">
-                            <button onclick="testConnection()" class="save-button" style="background: white; border: 1px solid #d1d5db; color: #374151;">
+                            <button onclick="testConnection(event)" class="save-button" style="background: white; border: 1px solid #d1d5db; color: #374151;">
                                 测试连接
                             </button>
                         </div>
@@ -126,7 +218,6 @@
                         <div class="select is-fullwidth">
                             <select id="invalid-action" class="config-input">
                                 <option value="mark">标记为失效</option>
-                                <option value="keep">保留但标记</option>
                                 <option value="delete">删除</option>
                             </select>
                         </div>
@@ -146,7 +237,7 @@
                         <p class="help mt-1 is-small has-text-grey-light">采集日志保留多少天</p>
                     </div>
 
-                    <button onclick="saveConfig()" class="save-button" style="background: linear-gradient(90deg, #059669 0%, #047857 100%); color: white;">
+                    <button onclick="saveConfig(event)" class="save-button" style="background: linear-gradient(90deg, #059669 0%, #047857 100%); color: white;">
                         保存采集配置
                     </button>
                 </div>
@@ -230,7 +321,7 @@
                             </div>
                         </div>
                     </div>
-                    <button onclick="saveConfig()" class="save-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%); color: white;">
+                    <button onclick="saveConfig(event)" class="save-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%); color: white;">
                         保存速率配置
                     </button>
                 </div>
@@ -249,13 +340,42 @@
 
                 <div class="mb-5">
                     <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">排行榜采集</label>
+                        <label class="label is-small has-text-weight-medium mb-2">
+                            排行榜采集
+                            <span class="cron-tooltip">
+                                <span class="info-icon">?</span>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">Cron表达式格式：分 时 日 月 周</div>
+                                    <div class="tooltip-examples">
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * *</span>
+                                            <span class="tooltip-example-desc">每天凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 */2 * * *</span>
+                                            <span class="tooltip-example-desc">每2小时</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1</span>
+                                            <span class="tooltip-example-desc">每周一凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 1 * *</span>
+                                            <span class="tooltip-example-desc">每月1号凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1-5</span>
+                                            <span class="tooltip-example-desc">工作日（周一到五）凌晨2点</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </span>
+                        </label>
                         <div class="columns">
                             <div class="column is-8">
                                 <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
                                 <input type="text" id="artwork_ranking-cron" value="0 0 2 * * *" placeholder="秒 分 时 日 月 周"
                                     class="input config-input">
-                                <p class="help mt-1 is-small has-text-grey-light">格式：分 时 日 月 周，例如：0 2 * * * （每天凌晨2点）</p>
                             </div>
                             <div class="column is-4">
                                 <label class="label is-small has-text-grey-light mb-1">状态</label>
@@ -270,13 +390,42 @@
                     </div>
 
                     <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">同步关注列表</label>
+                        <label class="label is-small has-text-weight-medium mb-2">
+                            同步关注列表
+                            <span class="cron-tooltip">
+                                <span class="info-icon">?</span>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">Cron表达式格式：分 时 日 月 周</div>
+                                    <div class="tooltip-examples">
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * *</span>
+                                            <span class="tooltip-example-desc">每天凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 */2 * * *</span>
+                                            <span class="tooltip-example-desc">每2小时</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1</span>
+                                            <span class="tooltip-example-desc">每周一凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 1 * *</span>
+                                            <span class="tooltip-example-desc">每月1号凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1-5</span>
+                                            <span class="tooltip-example-desc">工作日（周一到五）凌晨2点</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </span>
+                        </label>
                         <div class="columns">
                             <div class="column is-8">
                                 <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
                                 <input type="text" id="follow-sync-cron" value="0 0 6 * * *" placeholder="秒 分 时 日 月 周"
                                     class="input config-input">
-                                <p class="help mt-1 is-small has-text-grey-light">格式：分 时 日 月 周，例如：0 6 * * * （每天早上6点）</p>
                             </div>
                             <div class="column is-4">
                                 <label class="label is-small has-text-grey-light mb-1">状态</label>
@@ -291,13 +440,42 @@
                     </div>
 
                     <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">采集关注用户新作品</label>
+                        <label class="label is-small has-text-weight-medium mb-2">
+                            采集关注用户新作品
+                            <span class="cron-tooltip">
+                                <span class="info-icon">?</span>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">Cron表达式格式：分 时 日 月 周</div>
+                                    <div class="tooltip-examples">
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * *</span>
+                                            <span class="tooltip-example-desc">每天凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 */2 * * *</span>
+                                            <span class="tooltip-example-desc">每2小时</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1</span>
+                                            <span class="tooltip-example-desc">每周一凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 1 * *</span>
+                                            <span class="tooltip-example-desc">每月1号凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1-5</span>
+                                            <span class="tooltip-example-desc">工作日（周一到五）凌晨2点</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </span>
+                        </label>
                         <div class="columns">
                             <div class="column is-8">
                                 <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
                                 <input type="text" id="follow-works-cron" value="0 */2 * * * *" placeholder="秒 分 时 日 月 周"
                                     class="input config-input">
-                                <p class="help mt-1 is-small has-text-grey-light">格式：分 时 日 月 周，例如：0 */2 * * * （每2小时）</p>
                             </div>
                             <div class="column is-4">
                                 <label class="label is-small has-text-grey-light mb-1">状态</label>
@@ -312,13 +490,42 @@
                     </div>
 
                     <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">更新作品元数据</label>
+                        <label class="label is-small has-text-weight-medium mb-2">
+                            更新作品元数据
+                            <span class="cron-tooltip">
+                                <span class="info-icon">?</span>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">Cron表达式格式：分 时 日 月 周</div>
+                                    <div class="tooltip-examples">
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * *</span>
+                                            <span class="tooltip-example-desc">每天凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 */2 * * *</span>
+                                            <span class="tooltip-example-desc">每2小时</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1</span>
+                                            <span class="tooltip-example-desc">每周一凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 1 * *</span>
+                                            <span class="tooltip-example-desc">每月1号凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1-5</span>
+                                            <span class="tooltip-example-desc">工作日（周一到五）凌晨2点</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </span>
+                        </label>
                         <div class="columns">
                             <div class="column is-8">
                                 <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
                                 <input type="text" id="update-works-cron" value="0 0 3 * * *" placeholder="秒 分 时 日 月 周"
                                     class="input config-input">
-                                <p class="help mt-1 is-small has-text-grey-light">格式：秒 分 时 日 月 周，例如：0 0 3 * * * （每天凌晨3点）</p>
                             </div>
                             <div class="column is-4">
                                 <label class="label is-small has-text-grey-light mb-1">状态</label>
@@ -333,13 +540,42 @@
                     </div>
 
                     <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">清理旧日志</label>
+                        <label class="label is-small has-text-weight-medium mb-2">
+                            清理旧日志
+                            <span class="cron-tooltip">
+                                <span class="info-icon">?</span>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">Cron表达式格式：分 时 日 月 周</div>
+                                    <div class="tooltip-examples">
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * *</span>
+                                            <span class="tooltip-example-desc">每天凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 */2 * * *</span>
+                                            <span class="tooltip-example-desc">每2小时</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1</span>
+                                            <span class="tooltip-example-desc">每周一凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 1 * *</span>
+                                            <span class="tooltip-example-desc">每月1号凌晨2点</span>
+                                        </div>
+                                        <div class="tooltip-example">
+                                            <span class="tooltip-example-code">0 2 * * 1-5</span>
+                                            <span class="tooltip-example-desc">工作日（周一到五）凌晨2点</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </span>
+                        </label>
                         <div class="columns">
                             <div class="column is-8">
                                 <label class="label is-small has-text-grey-light mb-1">Cron表达式</label>
                                 <input type="text" id="clean-up-logs-cron" value="0 0 4 * * *" placeholder="秒 分 时 日 月 周"
                                     class="input config-input">
-                                <p class="help mt-1 is-small has-text-grey-light">格式：秒 分 时 日 月 周，例如：0 0 4 * * * （每天凌晨4点）</p>
                             </div>
                             <div class="column is-4">
                                 <label class="label is-small has-text-grey-light mb-1">状态</label>
@@ -353,7 +589,7 @@
                         </div>
                     </div>
 
-                    <button onclick="saveSchedulerConfig()" class="save-button" style="background: linear-gradient(90deg, #0891b2 0%, #0e7490 100%); color: white;">
+                    <button onclick="saveSchedulerConfig(event)" class="save-button" style="background: linear-gradient(90deg, #0891b2 0%, #0e7490 100%); color: white;">
                         保存任务配置
                     </button>
                 </div>
@@ -365,6 +601,33 @@
 
 {% block scripts %}
 <script>
+// 通用按钮加载状态管理函数
+function setButtonLoading(button, isLoading) {
+    const originalText = button.getAttribute('data-original-text');
+    
+    if (isLoading) {
+        // 保存原始文本
+        if (!originalText) {
+            button.setAttribute('data-original-text', button.innerHTML);
+        }
+        
+        // 设置加载状态
+        button.disabled = true;
+        button.innerHTML = `
+            <span class="animate__animated animate__spin" style="display: inline-flex; align-items: center;">
+                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </span>
+        `;
+    } else {
+        // 恢复原始状态
+        button.disabled = false;
+        button.innerHTML = originalText || button.getAttribute('data-original-text');
+        button.removeAttribute('data-original-text');
+    }
+}
+
 async function loadConfig() {
     try {
         const response = await fetch('/api/config');
@@ -423,7 +686,8 @@ async function loadSchedulerConfig() {
     }
 }
 
-async function saveTokens() {
+async function saveTokens(event) {
+    const button = event.currentTarget;
     const refreshToken = document.getElementById('refresh-token').value;
     const accessToken = document.getElementById('access-token').value;
 
@@ -432,6 +696,8 @@ async function saveTokens() {
         return;
     }
 
+    setButtonLoading(button, true);
+    
     try {
         const response = await fetch('/api/config/tokens', {
             method: 'POST',
@@ -449,10 +715,16 @@ async function saveTokens() {
         }
     } catch (error) {
         notify('保存失败: ' + error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
     }
 }
 
-async function testConnection() {
+async function testConnection(event) {
+    const button = event.currentTarget;
+    
+    setButtonLoading(button, true);
+    
     try {
         const response = await fetch('/api/config/test', { method: 'POST' });
         const data = await response.json();
@@ -463,10 +735,13 @@ async function testConnection() {
         }
     } catch (error) {
         notify('连接测试失败: ' + error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
     }
 }
 
-async function saveConfig() {
+async function saveConfig(event) {
+    const button = event.currentTarget;
     const config = {
         update_interval_days: parseInt(document.getElementById('update-interval').value),
         invalid_artwork_action: document.getElementById('invalid-action').value,
@@ -482,6 +757,8 @@ async function saveConfig() {
         log_retention_days: parseInt(document.getElementById('log-retention-days').value)
     };
 
+    setButtonLoading(button, true);
+    
     try {
         const response = await fetch('/api/config', {
             method: 'POST',
@@ -496,10 +773,13 @@ async function saveConfig() {
         }
     } catch (error) {
         notify('保存失败: ' + error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
     }
 }
 
-async function saveSchedulerConfig() {
+async function saveSchedulerConfig(event) {
+    const button = event.currentTarget;
     const config = {
         ranking_works: {
             crontab_expression: document.getElementById('artwork_ranking-cron').value,
@@ -523,6 +803,8 @@ async function saveSchedulerConfig() {
         }
     };
 
+    setButtonLoading(button, true);
+    
     try {
         // 保存配置到数据库
         const response = await fetch('/api/config/scheduler', {
@@ -538,6 +820,8 @@ async function saveSchedulerConfig() {
         notify('任务配置保存成功', 'success');
     } catch (error) {
         notify('保存失败: ' + error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
     }
 }
 
