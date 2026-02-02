@@ -2,7 +2,7 @@
 import logging
 
 from flask import Blueprint, jsonify, request
-from flask_login import login_required
+from flask_login import current_user, login_required
 
 from services import services
 
@@ -130,3 +130,114 @@ def update_scheduler_config():
         'success': True,
         'message': 'Scheduler configuration updated successfully'
     })
+
+
+@config_api.route('/config/keys', methods=['GET'])
+@login_required
+def get_api_keys():
+    """获取所有API密钥."""
+    try:
+        keys = services.api_key.get_all()
+        return jsonify({
+            'success': True,
+            'api_keys': [key.to_dict() for key in keys]
+        })
+    except Exception as e:
+        logger.error(f"Failed to get API keys: {e}")
+        return jsonify({
+            'success': False,
+            'message': '获取API密钥失败'
+        }), 500
+
+
+@config_api.route('/config/keys', methods=['POST'])
+@login_required
+def create_api_key():
+    """创建API密钥."""
+    data = request.get_json()
+
+    if not data or 'name' not in data:
+        return jsonify({
+            'success': False,
+            'message': '缺少name参数'
+        }), 400
+
+    name = data['name'].strip()
+
+    if not name:
+        return jsonify({
+            'success': False,
+            'message': '密钥名称不能为空'
+        }), 400
+
+    try:
+        new_api_key = services.api_key.create(name)
+        logger.info(
+            f"User {current_user.username} created API key: {name}"
+        )
+        return jsonify({
+            'success': True,
+            'api_key': new_api_key.to_dict()
+        }), 201
+    except Exception as e:
+        logger.error(f"Failed to create API key: {e}")
+        return jsonify({
+            'success': False,
+            'message': '创建API密钥失败'
+        }), 500
+
+
+@config_api.route('/config/keys/<int:key_id>', methods=['DELETE'])
+@login_required
+def delete_api_key(key_id):
+    """删除API密钥."""
+    try:
+        success = services.api_key.delete(key_id)
+
+        if not success:
+            return jsonify({
+                'success': False,
+                'message': 'API密钥不存在'
+            }), 500
+
+        logger.info(
+            f"User {current_user.username} deleted API key ID: {key_id}"
+        )
+        return jsonify({
+            'success': True,
+            'message': '删除成功'
+        })
+    except Exception as e:
+        logger.error(f"Failed to delete API key: {e}")
+        return jsonify({
+            'success': False,
+            'message': '删除API密钥失败'
+        }), 500
+
+
+@config_api.route('/config/keys/<int:key_id>/toggle', methods=['PUT'])
+@login_required
+def toggle_api_key_status(key_id):
+    """切换API密钥状态."""
+    try:
+        api_key = services.api_key.toggle_status(key_id)
+
+        if not api_key:
+            return jsonify({
+                'success': False,
+                'message': 'API密钥不存在'
+            }), 500
+
+        logger.info(
+            f"User {current_user.username} toggled API key ID: {key_id}"
+        )
+        return jsonify({
+            'success': True,
+            'api_key': api_key.to_dict()
+        })
+    except Exception as e:
+        logger.error(f"Failed to toggle API key status: {e}")
+        return jsonify({
+            'success': False,
+            'message': '切换API密钥状态失败'
+        }), 500

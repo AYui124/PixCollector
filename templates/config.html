@@ -141,6 +141,88 @@
         font-weight: 600;
         vertical-align: middle;
     }
+
+    .key-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .key-table th {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #e5e7eb;
+        font-weight: 600;
+        color: #374151;
+        background: #f9fafb;
+    }
+
+    .key-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .key-table tr:hover {
+        background: #f9fafb;
+    }
+
+    .key-value {
+        font-family: 'Courier New', monospace;
+        background: #f3f4f6;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .action-button {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+
+    .action-button:hover {
+        transform: translateY(-0.0625rem);
+    }
+
+    .delete-button {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .delete-button:hover {
+        background: #fecaca;
+    }
+
+    .toggle-button {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .toggle-button:hover {
+        background: #bfdbfe;
+    }
 </style>
 
 <div style="margin-bottom: 1.5rem; max-width: 140rem; margin-left: auto; margin-right: auto; padding: 0 1rem;">
@@ -150,9 +232,10 @@
         <p class="subtitle is-6 has-text-grey mt-3">管理系统各项配置参数</p>
     </div>
 
-    <div class="columns is-multiline">
-        <!-- 左侧配置 -->
-        <div class="column is-12-mobile is-4-desktop" style="margin-bottom: 1.5rem;">
+    <!-- 上半部分：3:4布局 -->
+    <div class="columns is-multiline" style="margin-bottom: 1.5rem;">
+        <!-- 左侧：Pixiv Token配置 + 采集配置 -->
+        <div class="column is-12-mobile is-5-desktop" style="margin-bottom: 1.5rem;">
             <!-- Pixiv Token配置 -->
             <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
                 <div class="section-title">
@@ -208,9 +291,16 @@
                 <div class="mb-5">
                     <div class="field">
                         <label for="update-interval" class="label is-small has-text-weight-medium mb-2">更新间隔（天）</label>
-                        <input type="number" id="update-interval" min="1" max="365" value="7"
+                        <input type="number" id="update-interval" min="1" max="365" value="30"
                             class="input config-input">
-                        <p class="help mt-1 is-small has-text-grey-light">更新间隔多久未同步的作品元数据</p>
+                        <p class="help mt-1 is-small has-text-grey-light">更新间隔多久天内发布的作品元数据</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="update-max-per-run" class="label is-small has-text-weight-medium mb-2">每次更新最大处理数</label>
+                        <input type="number" id="update-max-per-run" min="1" max="1000" value="200"
+                            class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">每次更新任务最多处理的作品数量</p>
                     </div>
 
                     <div class="field">
@@ -244,89 +334,8 @@
             </div>
         </div>
 
-        <!-- 右侧配置 -->
-        <div class="column is-12-mobile is-8-desktop">
-            <!-- 速率限制配置 -->
-            <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-                <div class="section-title">
-                    <div class="icon-box has-background-purple-light">
-                        <svg class="image is-20x20" style="color: #9333ea;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h2 class="title is-5 has-text-grey-darker">速率限制配置</h2>
-                </div>
-
-                <div class="mb-5">
-                    <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">API调用延迟（秒）</label>
-                        <div class="columns is-mobile">
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最小</label>
-                                <input type="number" id="api-delay-min" step="0.1" value="1.0" placeholder="最小"
-                                    class="input config-input">
-                            </div>
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最大</label>
-                                <input type="number" id="api-delay-max" step="0.1" value="3.0" placeholder="最大"
-                                    class="input config-input">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">429错误延迟（秒）</label>
-                        <div class="columns is-mobile">
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最小</label>
-                                <input type="number" id="error-delay-429-min" step="0.1" value="30.0" placeholder="最小"
-                                    class="input config-input">
-                            </div>
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最大</label>
-                                <input type="number" id="error-delay-429-max" step="0.1" value="60.0" placeholder="最大"
-                                    class="input config-input">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">403错误延迟（秒）</label>
-                        <div class="columns is-mobile">
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最小</label>
-                                <input type="number" id="error-delay-403-min" step="0.1" value="60.0" placeholder="最小"
-                                    class="input config-input">
-                            </div>
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最大</label>
-                                <input type="number" id="error-delay-403-max" step="0.1" value="120.0" placeholder="最大"
-                                    class="input config-input">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label is-small has-text-weight-medium mb-2">其他错误延迟（秒）</label>
-                        <div class="columns is-mobile">
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最小</label>
-                                <input type="number" id="error-delay-other-min" step="0.1" value="10.0" placeholder="最小"
-                                    class="input config-input">
-                            </div>
-                            <div class="column">
-                                <label class="label is-small has-text-grey-light mb-1">最大</label>
-                                <input type="number" id="error-delay-other-max" step="0.1" value="20.0" placeholder="最大"
-                                    class="input config-input">
-                            </div>
-                        </div>
-                    </div>
-                    <button onclick="saveConfig(event)" class="save-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%); color: white;">
-                        保存速率配置
-                    </button>
-                </div>
-            </div>
-
+        <!-- 右侧：定时任务配置 + 速率限制配置 -->
+        <div class="column is-12-mobile is-7-desktop">
             <!-- 定时任务配置 -->
             <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
                 <div class="section-title">
@@ -594,6 +603,170 @@
                     </button>
                 </div>
             </div>
+
+            <!-- 速率限制配置 -->
+            <div class="config-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div class="section-title">
+                    <div class="icon-box has-background-purple-light">
+                        <svg class="image is-20x20" style="color: #9333ea;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="title is-5 has-text-grey-darker">速率限制配置</h2>
+                </div>
+
+                <div class="mb-5">
+                    <div class="columns is-multiline">
+                        <div class="column is-6-desktop">
+                            <div class="field">
+                                <label class="label is-small has-text-weight-medium mb-2">API调用延迟（秒）</label>
+                                <div class="columns is-mobile">
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                        <input type="number" id="api-delay-min" step="0.1" value="1.0" placeholder="最小"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                        <input type="number" id="api-delay-max" step="0.1" value="3.0" placeholder="最大"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="label is-small has-text-weight-medium mb-2">429错误延迟（秒）</label>
+                                <div class="columns is-mobile">
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                        <input type="number" id="error-delay-429-min" step="0.1" value="30.0" placeholder="最小"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                        <input type="number" id="error-delay-429-max" step="0.1" value="60.0" placeholder="最大"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="column is-6-desktop">
+                            <div class="field">
+                                <label class="label is-small has-text-weight-medium mb-2">403错误延迟（秒）</label>
+                                <div class="columns is-mobile">
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                        <input type="number" id="error-delay-403-min" step="0.1" value="60.0" placeholder="最小"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                        <input type="number" id="error-delay-403-max" step="0.1" value="120.0" placeholder="最大"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="label is-small has-text-weight-medium mb-2">其他错误延迟（秒）</label>
+                                <div class="columns is-mobile">
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最小</label>
+                                        <input type="number" id="error-delay-other-min" step="0.1" value="10.0" placeholder="最小"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                    <div class="column">
+                                        <label class="label is-small has-text-grey-light mb-1">最大</label>
+                                        <input type="number" id="error-delay-other-max" step="0.1" value="20.0" placeholder="最大"
+                                            class="input config-input" style="padding: 0.5rem 0.75rem;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="saveConfig(event)" class="save-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%); color: white;">
+                        保存速率配置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下半部分：API密钥管理（100%宽度） -->
+    <div class="columns is-multiline">
+        <div class="column is-12">
+            <!-- API密钥管理 -->
+            <div class="config-card" style="padding: 1.5rem;">
+                <div class="section-title">
+                    <div class="icon-box has-background-orange-light">
+                        <svg class="image is-20x20" style="color: #ea580c;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L10 14H9v1H8v1H7v-4h4v1H8v2h1v1h1l-.343 1.257A6 6 0 0115 17v-2a2 2 0 012-2zM9 9l-3 3 3 3m-3-3h12" />
+                        </svg>
+                    </div>
+                    <h2 class="title is-5 has-text-grey-darker">API密钥管理</h2>
+                </div>
+
+                <div class="mb-5">
+                    <div class="field" style="margin-bottom: 1.5rem;">
+                        <label for="new-key-name" class="label is-small has-text-weight-medium mb-2">创建新密钥</label>
+                        <div class="columns">
+                            <div class="column is-8">
+                                <input type="text" id="new-key-name" placeholder="输入密钥名称（如：移动端应用、第三方集成等）"
+                                    class="input config-input">
+                            </div>
+                            <div class="column is-4">
+                                <button onclick="createApiKey(event)" class="save-button" style="background: linear-gradient(90deg, #ea580c 0%, #dc6803 100%); color: white;">
+                                    创建密钥
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <div style="margin-bottom: 1rem;">
+                        <label class="label is-small has-text-weight-medium mb-2">密钥列表</label>
+                    </div>
+                    <div id="keys-container">
+                        <div style="text-align: center; padding: 2rem; color: #9ca3af;">
+                            加载中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建密钥成功模态框 -->
+    <div id="key-modal" class="modal">
+        <div class="modal-background" onclick="closeModal()"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">密钥创建成功</p>
+                <button class="delete" aria-label="close" onclick="closeModal()"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="notification is-warning">
+                    请立即复制并保存您的密钥，关闭此窗口后将无法再次查看完整密钥！
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label class="label">密钥名称</label>
+                    <div id="modal-key-name" style="font-weight: 600;"></div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label class="label">API密钥</label>
+                    <div id="modal-key-value" class="key-value" style="font-size: 1rem; padding: 0.5rem 1rem; word-break: break-all;"></div>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <button onclick="copyKey()" class="button is-info is-fullwidth">
+                        复制密钥
+                    </button>
+                </div>
+            </section>
+            <footer class="modal-card-foot" style="justify-content: flex-end;margin-top: 0;padding: 10px;">
+                <button class="button" onclick="closeModal()">关闭</button>
+            </footer>
         </div>
     </div>
 </div>
@@ -634,7 +807,8 @@ async function loadConfig() {
         const data = await response.json();
         if (data.success) {
             const config = data.config;
-            document.getElementById('update-interval').value = config.update_interval_days || 7;
+            document.getElementById('update-interval').value = config.update_interval_days || 30;
+            document.getElementById('update-max-per-run').value = config.update_max_per_run || 200;
             document.getElementById('invalid-action').value = config.invalid_artwork_action || 'mark';
             document.getElementById('backtrack-years').value = config.new_user_backtrack_years || 2;
             
@@ -744,6 +918,7 @@ async function saveConfig(event) {
     const button = event.currentTarget;
     const config = {
         update_interval_days: parseInt(document.getElementById('update-interval').value),
+        update_max_per_run: parseInt(document.getElementById('update-max-per-run').value),
         invalid_artwork_action: document.getElementById('invalid-action').value,
         new_user_backtrack_years: parseInt(document.getElementById('backtrack-years').value),
         api_delay_min: parseFloat(document.getElementById('api-delay-min').value),
@@ -828,5 +1003,209 @@ async function saveSchedulerConfig(event) {
 // 页面加载时获取配置
 loadConfig();
 loadSchedulerConfig();
+loadApiKeys();
+
+
+// API密钥管理相关函数
+let createdKeyValue = '';
+
+async function loadApiKeys() {
+    try {
+        const response = await fetch('/api/config/keys');
+        const data = await response.json();
+        
+        if (data.success) {
+            renderApiKeys(data.api_keys);
+        } else {
+            document.getElementById('keys-container').innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                    加载失败: ${data.message}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('加载API密钥失败:', error);
+        document.getElementById('keys-container').innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #ef4444;">
+                加载失败: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function renderApiKeys(keys) {
+    const container = document.getElementById('keys-container');
+    
+    if (keys.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 3rem; color: #9ca3af;">
+                <svg style="width: 4rem; height: 4rem; margin-bottom: 1rem; opacity: 0.5;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L10 14H9v1H8v1H7v-4h4v1H8v2h1v1h1l-.343 1.257A6 6 0 0115 17v-2a2 2 0 012-2zM9 9l-3 3 3 3m-3-3h12" />
+                </svg>
+                <p>暂无API密钥</p>
+                <p style="font-size: 0.875rem; margin-top: 0.5rem;">点击上方创建密钥开始使用</p>
+            </div>
+        `;
+        return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'key-table';
+    
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th style="width: 20%;">名称</th>
+                <th style="width: 25%;">密钥</th>
+                <th style="width: 10%;">状态</th>
+                <th style="width: 15%;">使用次数</th>
+                <th style="width: 30%;">操作</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    `;
+    
+    const tbody = table.querySelector('tbody');
+    keys.forEach(key => {
+        const tr = document.createElement('tr');
+        
+        // 掩码显示密钥
+        const maskedKey = key.key.substring(0, 8) + '...' + key.key.substring(key.key.length - 4);
+        
+        tr.innerHTML = `
+            <td style="font-weight: 500;">${key.name}</td>
+            <td><span class="key-value">${maskedKey}</span></td>
+            <td>
+                <span class="status-badge ${key.is_active ? 'status-active' : 'status-inactive'}">
+                    ${key.is_active ? '启用' : '禁用'}
+                </span>
+            </td>
+            <td>${key.usage_count} 次</td>
+            <td>
+                <button onclick="toggleKeyStatus(${key.id}, event)" class="action-button toggle-button">
+                    ${key.is_active ? '禁用' : '启用'}
+                </button>
+                <button onclick="deleteKey(${key.id}, event)" class="action-button delete-button" style="margin-left: 0.5rem;">
+                    删除
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(table);
+}
+
+async function createApiKey(event) {
+    const button = event.currentTarget;
+    const name = document.getElementById('new-key-name').value.trim();
+    
+    if (!name) {
+        notify('请输入密钥名称', 'warning');
+        return;
+    }
+    
+    setButtonLoading(button, true);
+    
+    try {
+        const response = await fetch('/api/config/keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('new-key-name').value = '';
+            showKeyModal(data.api_key);
+            loadApiKeys();
+            notify('密钥创建成功', 'success');
+        } else {
+            notify('创建失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('创建失败: ' + error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+async function deleteKey(keyId, event) {
+    if (!confirm('确定要删除此API密钥吗？此操作不可恢复！')) {
+        return;
+    }
+    
+    const button = event.currentTarget;
+    const originalText = button.innerHTML;
+    setButtonLoading(button, true);
+    
+    try {
+        const response = await fetch(`/api/config/keys/${keyId}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            loadApiKeys();
+            notify('密钥已删除', 'success');
+        } else {
+            notify('删除失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('删除失败: ' + error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
+        button.innerHTML = originalText;
+    }
+}
+
+async function toggleKeyStatus(keyId, event) {
+    const button = event.currentTarget;
+    const originalText = button.innerHTML;
+    setButtonLoading(button, true);
+    
+    try {
+        const response = await fetch(`/api/config/keys/${keyId}/toggle`, {
+            method: 'PUT'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            loadApiKeys();
+            notify('状态已更新', 'success');
+        } else {
+            notify('更新失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        notify('更新失败: ' + error.message, 'error');
+    } finally {
+        setButtonLoading(button, false);
+        button.innerHTML = originalText;
+    }
+}
+
+function showKeyModal(apiKey) {
+    createdKeyValue = apiKey.key;
+    document.getElementById('modal-key-name').textContent = apiKey.name;
+    document.getElementById('modal-key-value').textContent = apiKey.key;
+    document.getElementById('key-modal').classList.add('is-active');
+}
+
+function closeModal() {
+    document.getElementById('key-modal').classList.remove('is-active');
+    createdKeyValue = '';
+}
+
+function copyKey() {
+    if (createdKeyValue) {
+        navigator.clipboard.writeText(createdKeyValue).then(() => {
+            notify('密钥已复制到剪贴板', 'success');
+        }).catch(err => {
+            notify('复制失败: ' + err.message, 'error');
+        });
+    }
+}
 </script>
 {% endblock %}

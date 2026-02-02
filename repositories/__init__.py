@@ -1,4 +1,5 @@
 """Repository层初始化."""
+from repositories.api_key_repository import ApiKeyRepository
 from repositories.artwork_repository import ArtworkRepository
 from repositories.base_repository import BaseRepository
 from repositories.collection_repository import CollectionRepository
@@ -14,5 +15,6 @@ __all__ = [
     'CollectionRepository',
     'SchedulerRepository',
     'ConfigRepository',
-    'UserRepository'
+    'UserRepository',
+    'ApiKeyRepository'
 ]
