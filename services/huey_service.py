@@ -321,10 +321,10 @@ def _get_task_function(collect_type: str):
 
 
 def _execute_ranking_tasks():
-    """执行所有排行榜采集任务."""
+    """执行排行榜采集任务."""
     tasks = [
-        ('daily', collect_daily_rank_task),
-        ('weekly', collect_weekly_rank_task),
+        # ('daily', collect_daily_rank_task),
+        # ('weekly', collect_weekly_rank_task),
         ('monthly', collect_monthly_rank_task)
     ]
     for rank_type, task_func in tasks:

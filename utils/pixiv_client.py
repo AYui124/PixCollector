@@ -35,13 +35,15 @@ class PixivClient:
 
     def get_ranking(
         self,
-        mode: str
+        mode: str,
+        offset: int = 0
     ) -> Any:
         """
         获取排行榜数据.
 
         Args:
             mode: 排行榜模式
+            offset: 偏移量（分页使用）
 
         Returns:
             排行榜数据
@@ -53,7 +55,7 @@ class PixivClient:
             if mode not in ['day', 'week', 'month', '']:
                 raise
             literal_mode = cast(_MODE, mode)
-            return self._api.illust_ranking(mode=literal_mode)
+            return self._api.illust_ranking(mode=literal_mode, offset=offset)
         except Exception as e:
             logger.error(f"Failed to get ranking: {e}")
             raise

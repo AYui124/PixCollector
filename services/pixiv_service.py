@@ -302,7 +302,7 @@ class PixivService:
             采集结果
         """
         self._ensure_initialized()
-
+        max_pages = self.get_config_value('ranking_collect_pages', 5)
         log_type = 'ranking_works'
         log = self._collection_repo.create_log(
             log_type=log_type,
@@ -315,35 +315,70 @@ class PixivService:
             self._ensure_valid_token()
 
             artworks_list = []
+            has_more = True
+            offset = 0
+            page_count = 1
 
-            # 获取排行榜数据
-            logger.info(f"Fetching {mode} ranking...")
-            rank_data = self.client.get_ranking(mode)
-            self.limiter.wait()
-
-            # 验证返回数据
-            if (
-                not rank_data
-                or not hasattr(rank_data, 'illusts')
-                or not rank_data.illusts
-            ):
-                raise ValueError(f"No illusts found in {mode} ranking data")
-
-            logger.info(
-                f"{mode.capitalize()} ranking result count: "
-                f"{len(rank_data.illusts)}"
-            )
-
-            # 处理每个作品
-            for item in rank_data.illusts:
+            while has_more and page_count <= max_pages:
                 try:
-                    artwork_pages = self._parse_artwork(item)
-                    for artwork_data in artwork_pages:
-                        artwork_data['collect_type'] = log_type
-                        artworks_list.append(artwork_data)
+                    # 获取排行榜数据
+                    logger.info(
+                        f"Fetching {mode} ranking page {page_count}..."
+                    )
+                    rank_data = self.client.get_ranking(mode, offset=offset)
+                    self.limiter.wait()
+
+                    # 验证返回数据
+                    if (
+                        not rank_data
+                        or not hasattr(rank_data, 'illusts')
+                        or not rank_data.illusts
+                    ):
+                        logger.warning(
+                            f"No illusts found in {mode} ranking data "
+                            f"page {page_count}"
+                        )
+                        break
+
+                    logger.info(
+                        f"{mode.capitalize()} ranking page {page_count} "
+                        f"result count: {len(rank_data.illusts)}"
+                    )
+
+                    # 处理每个作品
+                    for item in rank_data.illusts:
+                        try:
+                            artwork_pages = self._parse_artwork(item)
+                            for artwork_data in artwork_pages:
+                                artwork_data['collect_type'] = log_type
+                                artworks_list.append(artwork_data)
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to parse artwork {item.id}: {e}"
+                            )
+                            continue
+
+                    # 检查是否还有更多
+                    if not rank_data.next_url:
+                        has_more = False
+                        logger.info(f"No more pages for {mode} ranking")
+                    else:
+                        offset = self._parse_offset(rank_data.next_url)
+                        logger.debug(
+                            f'next_url={rank_data.next_url}, '
+                            f'offset={offset}'
+                        )
+
+                    page_count += 1
+
+                    # 批量等待
+                    if self.limiter.batch_wait(page_count, max_pages):
+                        logger.info("Pause in collect_rank")
+
                 except Exception as e:
-                    logger.error(f"Failed to parse artwork {item.id}: {e}")
-                    continue
+                    logger.error(f"Error processing page {page_count}: {e}")
+                    self.limiter.handle_error()
+                    break
 
             # 批量保存
             saved_count = self._artwork_repo.batch_create(artworks_list)
