@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, current_app, jsonify, request
 
 from services import services
+from utils.api_rate_limiter import rate_limit
 from utils.time_utils import format_datetime
 
 logger = logging.getLogger(__name__)
@@ -78,15 +79,17 @@ def get_public_stats():
 
 
 @public_api.route('/public/random/artwork', methods=['GET'])
+@rate_limit()
 def get_random_artwork():
     """获取随机图片（公开API，支持标签过滤）."""
+    # 获取请求参数
     limit = request.args.get('limit', 1, type=int)
     tags_param = request.args.get('tags', '')
     tags_match = request.args.get('tags_match', 'or', type=str)
     is_r18_param = request.args.get('is_r18', 'false', type=str)
 
     # 参数验证
-    limit = min(max(limit, 1), 10)
+    limit = max(1, min(limit, 10))
     tags_match = tags_match.lower() if tags_match in ['and', 'or'] else 'or'
 
     # 转换参数

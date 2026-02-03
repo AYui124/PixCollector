@@ -212,3 +212,57 @@ def invalidate_artwork_by_illust_id(illust_id):
             'success': False,
             'message': f'操作失败: {str(e)}'
         }), 500
+
+
+@artwork_api.route('/artworks/<int:artwork_id>/restore', methods=['PATCH'])
+@login_required
+def restore_artwork(artwork_id):
+    """手动还原作品为有效."""
+    try:
+        success = services.artwork.restore_page(artwork_id)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '已还原为有效'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '作品不存在'
+            }), 404
+    except Exception as e:
+        logger.error(f"Failed to restore artwork {artwork_id}: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'操作失败: {str(e)}'
+        }), 500
+
+
+@artwork_api.route(
+    '/artworks/by-illust/<int:illust_id>/restore',
+    methods=['PATCH']
+)
+@login_required
+def restore_artwork_by_illust_id(illust_id):
+    """批量还原某作品的所有页为有效."""
+    try:
+        count = services.artwork.restore_illust(illust_id)
+        if count > 0:
+            return jsonify({
+                'success': True,
+                'message': f'已还原{count}张图片'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '作品不存在'
+            }), 404
+    except Exception as e:
+        logger.error(
+            f"Failed to restore artworks "
+            f"by illust_id {illust_id}: {e}"
+        )
+        return jsonify({
+            'success': False,
+            'message': f'操作失败: {str(e)}'
+        }), 500

@@ -95,6 +95,11 @@ def insert_default_system_config():
             'type': 'integer',
             'desc': '采集日志保留天数'
         },
+        'ranking_collect_pages': {
+            'value': '5',
+            'type': 'integer',
+            'desc': '排行榜采集页数'
+        },
 
         # 速率限制配置
         'api_delay_min': {

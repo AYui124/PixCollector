@@ -182,6 +182,9 @@ docker build -t pixcollector:latest .
 | HUEY_RESULT_TIMEOUT | HUEY 结果缓存时长 | 604800 | 否 |
 | HUEY_WORKER_TYPE | HUEY 任务类型 | thread | 否 |
 | HUEY_WORKER_COUNT | HUEY 任务数量 | 2 | 否 |
+| RATE_LIMIT_NO_KEY | 没有key时的可调用次数 | 10 | 否 |
+| RATE_LIMIT_WITH_KEY | 有key时的可调用次数 | 60 | 否 |
+| RATE_LIMIT_WINDOW_SECONDS | 限制器计数窗口时间 | 60 | 否 |
 
 ## 许可证
 

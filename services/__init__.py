@@ -1,6 +1,7 @@
 """Service层初始化."""
 from typing import TYPE_CHECKING
 
+from services.api_key_service import ApiKeyService
 from services.artwork_service import ArtworkService
 from services.auth_service import AuthService
 from services.collection_service import CollectionService
@@ -35,6 +36,7 @@ class Services:
     _follow: 'FollowService | None' = None
     _scheduler: 'SchedulerService | None' = None
     _pixiv: 'PixivService | None' = None
+    _api_key: 'ApiKeyService | None' = None
 
     @property
     def auth(self) -> AuthService:
@@ -120,6 +122,18 @@ class Services:
         """设置 Pixiv 服务."""
         self._pixiv = value
 
+    @property
+    def api_key(self) -> ApiKeyService:
+        """获取API密钥服务."""
+        if self._api_key is None:
+            self._api_key = ApiKeyService.get_instance()
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, value):
+        """设置API密钥服务."""
+        self._api_key = value
+
 
 # 全局实例
 tools = Tools()
@@ -134,6 +148,7 @@ __all__ = [
     'AuthService',
     'CollectionService',
     'SchedulerService',
+    'ApiKeyService',
     'Tools',
     'Services',
     'tools',

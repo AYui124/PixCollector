@@ -90,6 +90,18 @@ class Config:
         os.getenv('HUEY_WORKER_COUNT', 2)
     )
 
+    RATE_LIMIT_NO_KEY = int(
+        os.getenv('RATE_LIMIT_NO_KEY', 10)
+    )
+
+    RATE_LIMIT_WITH_KEY = int(
+        os.getenv('RATE_LIMIT_WITH_KEY', 60)
+    )
+
+    RATE_LIMIT_WINDOW_SECONDS = int(
+        os.getenv('RATE_LIMIT_WINDOW_SECONDS', 60)
+    )
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,

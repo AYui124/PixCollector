@@ -158,6 +158,23 @@
             margin-top: 1rem;
         }
         
+        /* 自定义无限旋转动画（扩展 Animate.css，与 base.html 统一） */
+        @keyframes animate__spin {
+            from { 
+                transform: rotate(0deg); 
+            }
+            to { 
+                transform: rotate(360deg); 
+            }
+        }
+
+        .animate__spin {
+            animation-name: animate__spin;
+            animation-duration: 1s;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
         /* Toastify 自定义样式 */
         .toastify {
             border-radius: 12px;

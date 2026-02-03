@@ -58,6 +58,10 @@
     .code-gray {
         color: #ffffff;
     }
+
+    .code-red {
+        color: #f67e25a8;
+    }
     
     .api-table th {
         background-color: #f9fafb;
@@ -242,6 +246,7 @@
                 <div class="code-block code-green">
                     <code>GET /api/public/random/artwork</code>
                 </div>
+                <div class="title is-6 code-red" style="padding: 0.2rem;"><span>注意有调用频率限制</span></div>
             </div>
 
             <!-- 参数说明 -->
@@ -560,7 +565,10 @@ async function testRandomAPI() {
             notify(`成功获取：${artwork.title}`, 'success');
             // 打开图片
             window.open(artwork.url, '_blank');
-        } else {
+        } else if (data.error == 'rate_limit_exceeded') {
+            notify('请求过于频繁，请稍后再试', 'warning');
+        }
+        else {
             notify('未找到符合条件的作品', 'warning');
         }
     } catch (error) {

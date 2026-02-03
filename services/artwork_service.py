@@ -256,3 +256,32 @@ class ArtworkService:
         """
         pagination = self.artwork_repo.search_artworks(**kwargs)
         return pagination.items
+
+    def restore_page(
+        self, artwork_id: int
+    ) -> bool:
+        """
+        还原作品为有效.
+
+        Args:
+            artwork_id: 作品ID
+
+        Returns:
+            是否成功
+        """
+        result = self.artwork_repo.restore_page(artwork_id)
+        return result is not None
+
+    def restore_illust(
+        self, illust_id: int
+    ) -> int:
+        """
+        还原某个作品的所有页为有效.
+
+        Args:
+            illust_id: 作品ID
+
+        Returns:
+            更新的作品数量
+        """
+        return self.artwork_repo.restore_illust(illust_id)

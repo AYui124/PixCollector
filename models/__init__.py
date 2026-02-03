@@ -1,4 +1,5 @@
 """数据库模型初始化."""
+from models.api_key import ApiKey
 from models.artwork import Artwork
 from models.collection_log import CollectionLog
 from models.follow import Follow
@@ -12,5 +13,6 @@ __all__ = [
     'Follow',
     'CollectionLog',
     'SchedulerConfig',
-    'SystemConfig'
+    'SystemConfig',
+    'ApiKey'
 ]

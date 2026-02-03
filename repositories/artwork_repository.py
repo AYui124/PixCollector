@@ -487,3 +487,46 @@ class ArtworkRepository(BaseRepository[Artwork]):
             ).limit(per_page)
 
             return list(session.execute(query).scalars().all())
+
+    def restore_page(
+        self, artwork_id: int
+    ) -> Artwork | None:
+        """
+        还原作品为有效.
+
+        Args:
+            artwork_id: 作品ID
+
+        Returns:
+            更新后的作品实例或None
+        """
+        return self.update(
+            artwork_id,
+            is_valid=True,
+            error_message=None
+        )
+
+    def restore_illust(
+        self, illust_id: int
+    ) -> int:
+        """
+        还原某个作品的所有页为有效.
+
+        Args:
+            illust_id: 作品ID
+
+        Returns:
+            更新的作品数量
+        """
+        with self.get_session() as session:
+            artworks = session.execute(
+                select(Artwork).where(Artwork.illust_id == illust_id)
+            ).scalars().all()
+
+            count = 0
+            for artwork in artworks:
+                artwork.is_valid = True
+                artwork.error_message = None
+                count += 1
+
+            return count
