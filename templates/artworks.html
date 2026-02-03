@@ -349,7 +349,7 @@
             </header>
             <section class="modal-card-body">
                 <p class="has-text-grey mb-4">
-                    确认后将标记为失效，不再显示在随机图库中
+                    确认后将标记为废弃，不再显示在随机图库中
                 </p>
                 <div class="field">
                     <label class="label">废弃原因（可选）</label>
@@ -360,16 +360,45 @@
                 <div class="field mt-4">
                     <label class="checkbox">
                         <input type="checkbox" id="invalidate-all-pages">
-                        <span class="ml-2">删除该作品全部页</span>
+                        <span class="ml-2">标记该作品全部页</span>
                     </label>
                     <p class="help has-text-grey mt-2">
-                        勾选后将删除该作品的所有页面，否则只删除当前页
+                        勾选后将标记该作品的所有页面，否则只标记当前页
                     </p>
                 </div>
             </section>
             <footer class="modal-card-foot" style="justify-content: flex-end;margin-top: 0;padding: 10px;">
                 <button class="button" onclick="closeInvalidateModal()">取消</button>
                 <button class="button is-danger" onclick="confirmInvalidate()">确认</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- 还原确认对话框 -->
+    <div id="restore-modal" class="modal">
+        <div class="modal-background" onclick="closeRestoreModal()"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">确认还原</p>
+                <button class="delete" onclick="closeRestoreModal()" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <p class="has-text-grey mb-4">
+                    确认后将还原为有效状态，可以重新显示在随机图库中
+                </p>
+                <div class="field mt-4">
+                    <label class="checkbox">
+                        <input type="checkbox" id="restore-all-pages">
+                        <span class="ml-2">还原该作品全部页</span>
+                    </label>
+                    <p class="help has-text-grey mt-2">
+                        勾选后将还原该作品的所有页面，否则只还原当前页
+                    </p>
+                </div>
+            </section>
+            <footer class="modal-card-foot" style="justify-content: flex-end;margin-top: 0;padding: 10px;">
+                <button class="button" onclick="closeRestoreModal()">取消</button>
+                <button class="button is-success" onclick="confirmRestore()">确认</button>
             </footer>
         </div>
     </div>
@@ -426,6 +455,9 @@ let currentPerPage = 20;
 
 let currentInvalidateId = null;
 let currentInvalidateIndex = null;
+let currentRestoreId = null;
+let currentRestoreIllustId = null;
+let currentRestoreIndex = null;
 
 function useProxy(url) {
     return url.replace('https://i.pximg.net', window.config.pixivProxyUrl)
@@ -577,6 +609,17 @@ function displayArtworks(artworks) {
             </button>
         ` : '';
 
+        const restoreButton = !artwork.is_valid ? `
+            <button onclick="openRestoreModal(${artwork.id}, ${artwork.illust_id}, ${index})" 
+                    class="button is-small is-success ml-2" style="margin-right: 0.2rem;">
+                <span class="icon">
+                    <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </span>
+            </button>
+        ` : '';
+
         return `
             <div class="column is-12-mobile is-6-tablet is-4-desktop is-3-widescreen">
                 <div class="artwork-card ${validClass}" ${invalidTooltip} style="height: 100%; display: flex; flex-direction: column;">
@@ -602,6 +645,7 @@ function displayArtworks(artworks) {
                             </div>
                             <div class="level-right">
                                 ${invalidateButton}
+                                ${restoreButton}
                                 ${artwork.share_url ? `
                                 <a href="${artwork.share_url}" target="_blank" 
                                    class="button is-small is-primary" style="background: linear-gradient(90deg, #4f46e5 0%, #4338ca 100%); border: none;">
@@ -852,6 +896,56 @@ async function confirmInvalidate() {
         }
     } catch (error) {
         console.error('标记废弃失败:', error);
+        notify('操作失败', 'error');
+    }
+}
+
+// 还原功能
+function openRestoreModal(artworkId, illustId, index) {
+    currentRestoreId = artworkId;
+    currentRestoreIllustId = illustId;
+    currentRestoreIndex = index;
+    document.getElementById('restore-all-pages').checked = false;
+    document.getElementById('restore-modal').classList.add('is-active');
+}
+
+function closeRestoreModal() {
+    document.getElementById('restore-modal').classList.remove('is-active');
+    currentRestoreId = null;
+    currentRestoreIllustId = null;
+    currentRestoreIndex = null;
+}
+
+async function confirmRestore() {
+    const restoreAll = document.getElementById('restore-all-pages').checked;
+    
+    try {
+        let url, message;
+        if (restoreAll) {
+            // 还原全部页
+            url = `/api/artworks/by-illust/${currentRestoreIllustId}/restore`;
+            message = `已还原${currentRestoreIllustId}的全部页`;
+        } else {
+            // 只还原当前页
+            url = `/api/artworks/${currentRestoreId}/restore`;
+            message = '已还原为有效';
+        }
+        
+        const response = await fetch(url, {
+            method: 'PATCH'
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            notify(data.message);
+            closeRestoreModal();
+            // 刷新当前页
+            loadArtworks(currentPage);
+        } else {
+            notify('操作失败: ' + data.message, 'error');
+        }
+    } catch (error) {
+        console.error('还原失败:', error);
         notify('操作失败', 'error');
     }
 }
