@@ -988,7 +988,7 @@ class PixivService:
                     'is_r18': bool(is_r18),
                     'type': artwork_type,
                     'is_valid': bool(is_valid),
-                    'error_message': err_msg,
+                    'error_message': None if bool(is_valid) else err_msg,
                     'last_updated_at': post_date,
                     'collect_type': '',
                     'created_at': get_utc_now()
@@ -1024,7 +1024,7 @@ class PixivService:
                 'is_r18': bool(is_r18),
                 'type': artwork_type,
                 'is_valid': bool(is_valid),
-                'error_message': err_msg,
+                'error_message': None if bool(is_valid) else err_msg,
                 'last_updated_at': post_date,
                 'collect_type': '',
                 'created_at': get_utc_now()
