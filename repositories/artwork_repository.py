@@ -233,16 +233,22 @@ class ArtworkRepository(BaseRepository[Artwork]):
                     for tag in tags_filter.split(',') if tag.strip()
                 ]
                 if tags_list:
+                    # 使用MySQL的JSON_SEARCH函数查找包含指定标签
                     if tags_match.lower() == 'and':
                         # AND模式：所有标签都必须匹配
                         for tag in tags_list:
                             query = query.filter(
-                                Artwork.tags.like(f'%{tag}%')
+                                func.json_search(
+                                    Artwork.tags, 'one', f'%{tag}%'
+                                ).is_not(None)
                             )
                     else:
                         # OR模式：任一标签匹配即可
                         or_conditions = [
-                            Artwork.tags.like(f'%{tag}%') for tag in tags_list
+                            func.json_search(
+                                Artwork.tags, 'one', f'%{tag}%'
+                            ).is_not(None)
+                            for tag in tags_list
                         ]
                         query = query.filter(or_(*or_conditions))
 
@@ -294,16 +300,22 @@ class ArtworkRepository(BaseRepository[Artwork]):
                     for tag in tags_filter.split(',') if tag.strip()
                 ]
                 if tags_list:
+                    # 使用MySQL的JSON_SEARCH函数查找包含指定标签
                     if tags_match.lower() == 'and':
                         # AND模式：所有标签都必须匹配
                         for tag in tags_list:
                             query = query.filter(
-                                Artwork.tags.like(f'%{tag}%')
+                                func.json_search(
+                                    Artwork.tags, 'one', f'%{tag}%'
+                                ).is_not(None)
                             )
                     else:
                         # OR模式：任一标签匹配即可
                         or_conditions = [
-                            Artwork.tags.like(f'%{tag}%') for tag in tags_list
+                            func.json_search(
+                                Artwork.tags, 'one', f'%{tag}%'
+                            ).is_not(None)
+                            for tag in tags_list
                         ]
                         query = query.filter(or_(*or_conditions))
 

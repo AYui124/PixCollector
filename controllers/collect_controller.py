@@ -12,9 +12,9 @@ logger = logging.getLogger(__name__)
 collect_api = Blueprint('collect_api', __name__)
 
 
-@collect_api.route('/collect/daily', methods=['POST'])
+@collect_api.route('/collect/daily-rank', methods=['POST'])
 @login_required
-def collect_daily():
+def collect_daily_rank():
     """手动触发每日排行采集."""
     if not services.pixiv:
         return jsonify({
@@ -34,9 +34,9 @@ def collect_daily():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@collect_api.route('/collect/weekly', methods=['POST'])
+@collect_api.route('/collect/weekly-rank', methods=['POST'])
 @login_required
-def collect_weekly():
+def collect_weekly_rank():
     """手动触发每周排行采集."""
     if not services.pixiv:
         return jsonify({
@@ -56,9 +56,9 @@ def collect_weekly():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@collect_api.route('/collect/monthly', methods=['POST'])
+@collect_api.route('/collect/monthly-rank', methods=['POST'])
 @login_required
-def collect_monthly():
+def collect_monthly_rank():
     """手动触发每月排行采集."""
     if not services.pixiv:
         return jsonify({
@@ -75,6 +75,28 @@ def collect_monthly():
         })
     except Exception as e:
         logger.error(f"Monthly rank task submission failed: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@collect_api.route('/collect/custom-rank', methods=['POST'])
+@login_required
+def collect_custom_rank():
+    """手动触发自定义榜单采集."""
+    if not services.pixiv:
+        return jsonify({
+            'success': False,
+            'message': 'Pixiv service not initialized'
+        }), 500
+
+    try:
+        task = huey_service.collect_custom_rank_task()
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '自定义榜单采集任务已提交'
+        })
+    except Exception as e:
+        logger.error(f"Custom ranking task submission failed: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 

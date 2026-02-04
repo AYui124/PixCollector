@@ -11,6 +11,12 @@ Pixiv图片采集系统 - 基于Python Flask的Pixiv图片自动采集、管理�
 - **采集日志**：实时查看采集任务执行情况和错误信息
 - **系统配置**：可视化的配置管理界面，配置保存在数据库中
 
+### 采集功能
+
+- **官方排行榜**：支持采集日/周/月排行榜
+- **关注用户**：自动同步关注列表，采集关注用户新作品
+- **自定义榜单**：基于关键词搜索，按评分筛选高质量作品
+
 ## 技术栈
 
 - **后端框架**: Python 3.12+ + Flask 3.0
@@ -131,8 +137,7 @@ curl -X POST http://127.0.0.1:5000/api/init
 
 ### 镜像拉取或构建
 
-项目已提供Dockerfile可以自行build
-**如自行build，需修改docker-compose.yml的image，默认为ghcr.io仓库**
+项目已提供Dockerfile可以自行build  
 ```bash
 docker build -t pixcollector:latest .
 ```
@@ -144,7 +149,7 @@ docker build -t pixcollector:latest .
 ### 使用Docker Compose
 
 1. 复制`env.example`为`app.env` 文件（修改见上文）
-2. 修改docker-compose.yml
+2. 修改docker-compose.yml  
    默认带redis但没有mysql，按自己环境调整修改
 3. 启动服务
    ```bash
@@ -158,6 +163,71 @@ docker build -t pixcollector:latest .
 
 
 ## 配置说明
+
+### 数据库配置项
+
+系统支持通过Web界面动态配置以下参数，配置保存在数据库中：
+
+#### Pixiv API配置
+- `access_token`: Pixiv访问令牌（自动获取）
+- `refresh_token`: Pixiv刷新令牌（必需）
+- `token_expires_at`: Token过期时间（自动管理）
+- `pixiv_user`: Pixiv用户ID（自动获取）
+
+#### 自定义榜单配置
+- `custom_ranking_keywords`: 自定义榜单关键词列表（逗号分隔）
+  - 示例：`黒スト,贫乳,女の子`
+  - 系统会依次搜索每个关键词，按评分筛选高质量作品
+
+#### API请求配置
+- `api_delay_min`: 最小请求延迟（秒）
+- `api_delay_max`: 最大请求延迟（秒）
+- `error_delay_429_min`: 429错误最小延迟（秒）
+- `error_delay_429_max`: 429错误最大延迟（秒）
+- `error_delay_403_min`: 403错误最小延迟（秒）
+- `error_delay_403_max`: 403错误最大延迟（秒）
+- `error_delay_other_min`: 其他错误最小延迟（秒）
+- `error_delay_other_max`: 其他错误最大延迟（秒）
+
+#### 排行榜采集配置
+- `ranking_collect_pages`: 官方排行榜采集页数（默认5页）
+
+#### 关注用户配置
+- `new_user_backtrack_years`: 新用户回采年限（默认2年）
+
+#### 作品更新配置
+- `update_interval_days`: 作品更新间隔天数（默认30天）
+- `update_max_per_run`: 每次更新最大作品数（默认200）
+- `invalid_artwork_action`: 失效作品处理策略（delete/mark，默认mark）
+
+#### 日志配置
+- `log_retention_days`: 日志保留天数（默认90天）
+
+### 自定义榜单评分规则
+
+自定义榜单使用智能评分系统筛选高质量作品：
+
+**评分公式**: `score = bookmark_count / (hours_since_post + 2) × (bookmark_count / total_view)`
+- AI作品调整：如果作品包含AI相关标签（如"AI生成"、"Stable Diffusion"等）评分按权重调整：
+   - 24小时内：score *= 0.45
+   - 24小时后：score *= 0.65
+
+**筛选条件**:
+- 发布时间 < 3小时 → 跳过
+- 收藏数 < 200 → 跳过
+- R-18 → 跳过
+- 超过5页 → 跳过
+- 非插画或tags带漫画 → 跳过
+- 动态阈值：按评分公式计算score
+   - 24小时内：score < 8.5 → 跳过
+   - 24小时后：score < 3.4 → 跳过
+
+**查询策略**:
+- 每个关键词循环查询，直到满足以下任一条件：
+  - offset >= 3000
+  - 当前页最老作品发布时间 < (当前时间 - 72小时)
+  - 符合条件作品数量 > 50
+- 每个关键词查询结束后立即保存
 
 ### 环境变量
 
