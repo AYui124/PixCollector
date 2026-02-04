@@ -528,7 +528,8 @@ function displayLogs(logs) {
         'follow_new_follow': '同步关注',
         'follow_new_works': '关注作品',
         'update_artworks': '更新作品',
-        'follow_user_artworks': '存量作品'
+        'follow_user_artworks': '存量作品',
+        'clean_up_logs': '清理日志'
     };
 
     const typeColors = {
@@ -537,7 +538,8 @@ function displayLogs(logs) {
         'follow_new_follow': 'background-color: #d1fae5; color: #065f46;',
         'follow_new_works': 'background-color: #cffafe; color: #164e63;',
         'update_artworks': 'background-color: #fef3c7; color: #92400e;',
-        'follow_user_artworks': 'background-color: #ffedd5; color: #9a3412;'
+        'follow_user_artworks': 'background-color: #ffedd5; color: #9a3412;',
+        'clean_up_logs': 'background-color: #effdd5; color: #3a9412;'
     };
 
     container.innerHTML = logs.map(log => {
