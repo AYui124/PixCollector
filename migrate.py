@@ -100,6 +100,11 @@ def insert_default_system_config():
             'type': 'integer',
             'desc': '排行榜采集页数'
         },
+        'custom_ranking_keywords': {
+            'value': '',
+            'type': 'string',
+            'desc': '自定义榜单关键词列表'
+        },
 
         # 速率限制配置
         'api_delay_min': {

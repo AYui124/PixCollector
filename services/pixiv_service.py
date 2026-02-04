@@ -409,6 +409,374 @@ class PixivService:
         """采集每月排行榜."""
         return self.collect_rank('month')
 
+    def collect_custom_rank(self) -> dict:
+        """
+        采集自定义榜单（基于搜索关键词）.
+        通过搜索多个关键词，按评分筛选高质量作品并保存.
+
+        Returns:
+            采集结果
+        """
+        self._ensure_initialized()
+
+        log_type = 'custom_rank'
+        log = self._collection_repo.create_log(
+            log_type=log_type,
+            status='running',
+            message='Starting custom ranking collection'
+        )
+
+        try:
+            # 确保token有效
+            self._ensure_valid_token()
+
+            # 获取关键词列表
+            keywords_str = self.get_config_value('custom_ranking_keywords', '')
+            keywords = [
+                k.strip() for k in keywords_str.split(',') if k.strip()
+            ]
+
+            if not keywords:
+                self._collection_repo.update_error(
+                    log.id,
+                    'No keywords configured for custom ranking'
+                )
+                return {
+                    'success': False,
+                    'error': 'No keywords configured'
+                }
+
+            logger.info(f"Custom ranking keywords: {keywords}")
+
+            total_saved = 0
+            keywords_stats = {}
+
+            # 遍历每个关键词
+            for keyword in keywords:
+                logger.info(f"Processing keyword: {keyword}")
+                saved = self._collect_single_keyword(keyword, log_type)
+                total_saved += saved
+                keywords_stats[keyword] = {'saved': saved}
+
+                logger.info(
+                    f"Keyword '{keyword}' completed, saved {saved} artworks"
+                )
+
+            # 更新日志
+            message = (
+                f'Collected {total_saved} artworks from '
+                f'{len(keywords)} keywords'
+            )
+            self._collection_repo.update_success(
+                log.id, message, total_saved
+            )
+
+            return {
+                'success': True,
+                'total_saved': total_saved,
+                'keywords_stats': keywords_stats
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to collect custom ranking: {e}")
+            self._collection_repo.update_error(log.id, str(e))
+            raise
+
+    def _collect_single_keyword(
+        self, keyword: str, log_type: str
+    ) -> int:
+        """
+        采集单个关键词的作品.
+
+        Args:
+            keyword: 搜索关键词
+            log_type: 日志类型
+
+        Returns:
+            保存的作品数量
+        """
+        artworks_to_save = []
+        offset = 0
+        qualified_count = 0
+        page_count = 0
+        max_offset = 3000
+        max_qualified = 50
+
+        while True:
+            # 检查offset限制
+            if offset >= max_offset:
+                logger.info(
+                    f"Offset {offset} >= {max_offset}, "
+                    f"stopping for keyword '{keyword}'"
+                )
+                break
+
+            # 查询搜索结果
+            try:
+                logger.info(
+                    f"Searching '{keyword}' at "
+                    f"page {page_count + 1}"
+                )
+                search_result = self.client.search_illust(
+                    word=keyword,
+                    offset=offset
+                )
+                self.limiter.wait()
+                page_count += 1
+
+                # 检查是否有结果
+                if not search_result or not hasattr(search_result, 'illusts'):
+                    logger.warning(
+                        f"No valid search result for '{keyword}'"
+                        f" at offset {offset}"
+                    )
+                    break
+
+                if not search_result.illusts:
+                    logger.info(
+                        f"No more results for '{keyword}' at offset {offset}"
+                    )
+                    break
+
+                # 检查最老作品是否超过72小时
+                oldest_illust = search_result.illusts[-1]
+                if self._is_too_old(oldest_illust.create_date):
+                    logger.info(
+                        f"Oldest artwork is too old (before 72h), "
+                        f"stopping for keyword '{keyword}'"
+                    )
+                    break
+
+                # 评分筛选
+                for item in search_result.illusts:
+                    score = self._calculate_score(item)
+
+                    # _calculate_score内部已处理阈值，score>0表示符合条件
+                    if score > 0:
+                        # 解析作品数据
+                        artwork_pages = self._parse_artwork(item)
+                        for artwork_data in artwork_pages:
+                            artwork_data['collect_type'] = log_type
+                            artworks_to_save.append(artwork_data)
+                        qualified_count += 1
+                        logger.debug(
+                            f"Qualified: {item.id} (score={score:.2f})"
+                        )
+
+                # 检查是否达到最大符合数量
+                if qualified_count >= max_qualified:
+                    logger.info(
+                        f"Reached {max_qualified} qualified artworks, "
+                        f"stopping for keyword '{keyword}'"
+                    )
+                    break
+
+                # 更新offset
+                if search_result.next_url:
+                    offset = self._parse_offset(search_result.next_url)
+                else:
+                    logger.info(
+                        f"No more pages for keyword '{keyword}'"
+                    )
+                    break
+
+                # 批量等待
+                if self.limiter.batch_wait(page_count, 10):
+                    logger.info("Pause in custom ranking collection")
+
+            except Exception as e:
+                logger.error(
+                    f"Error searching '{keyword}' at offset {offset}: {e}"
+                )
+                self.limiter.handle_error()
+                break
+
+        # 保存该关键词的作品
+        if artworks_to_save:
+            saved_count = self._artwork_repo.batch_create(artworks_to_save)
+            logger.info(
+                f"Saved {saved_count} artworks for keyword '{keyword}' "
+                f"({qualified_count} qualified)"
+            )
+            return saved_count
+
+        return 0
+
+    def _calculate_score(self, item) -> float:
+        """
+        计算作品评分（整合阈值判断和动态权重调整）.
+
+        评分公式: base_score = bookmark_count / (hours_since_post + 2)
+        最终分数 = 基础分数 × (bookmark_count / total_view)
+
+        动态权重：
+        - AI作品：24小时内0.45，24小时后0.65
+
+        动态阈值：
+        - 24小时内：8.5
+        - 24小时后：3.4
+
+        Args:
+            item: 作品项
+
+        Returns:
+            评分值（未达到阈值返回0）
+        """
+        # 获取书签数和浏览数
+        bookmark_count = 0
+        if hasattr(item, 'total_bookmarks'):
+            bookmark_count = item.total_bookmarks or 0
+
+        # 获取浏览数
+        total_view = 0
+        if hasattr(item, 'total_view'):
+            total_view = item.total_view or 0
+
+        # 获取发布时间
+        post_date = None
+        if hasattr(item, 'create_date'):
+            post_date = self._parse_create_date(item.create_date)
+
+        if not post_date:
+            return 0.0
+        is_ai = self._is_ai_artwork(item)
+        # 计算发布小时数
+        now = get_utc_now()
+        hours_since_post = (now - post_date).total_seconds() / 3600
+
+        # 过滤条件1: 发布时间 < 3小时
+        if hours_since_post < 3:
+            return 0.0
+
+        # 过滤条件2: 收藏数 < 200
+        if bookmark_count < 200:
+            return 0.0
+
+        # 过滤条件3: r18
+        if self._is_r18(item):
+            return 0.0
+
+        # 过滤条件4: 只要插画，过滤漫画
+        artwork_type = 'illust'
+        if hasattr(item, 'type'):
+            artwork_type = item.type
+        elif hasattr(item, 'illust_type'):
+            artwork_type = item.illust_type
+
+        tags = [tag.name for tag in item.tags] if hasattr(item, 'tags') else []
+
+        if artwork_type != 'illust' or '漫画' in tags:
+            logger.debug(
+                f"Skipped {item.id}: not illust or is manga"
+            )
+            return 0.0
+
+        # 过滤条件5: 超过5页的作品
+        work_page_count = item.page_count if hasattr(item, 'page_count') else 1
+        if work_page_count > 5:
+            logger.debug(
+                f"Skipped {item.id}: too many pages ({work_page_count})"
+            )
+            return 0.0
+
+        # 计算基础评分
+        base_score = bookmark_count / (hours_since_post + 2)
+
+        # 计算浏览转收藏率
+        if total_view > 0:
+            view_to_bookmark_rate = bookmark_count / total_view
+        else:
+            view_to_bookmark_rate = 0
+
+        # 最终分数 = 基础分数 × 浏览转收藏率
+        score = base_score * view_to_bookmark_rate
+
+        # 根据时间判断阈值
+        is_within_24h = hours_since_post < 24
+        min_threshold = 8.5 if is_within_24h else 3.4
+
+        # 未达到阈值则返回0
+        if score < min_threshold:
+            return 0.0
+
+        # 根据时间调整AI权重
+        if is_ai:
+            ai_weight = 0.45 if is_within_24h else 0.65
+            score *= ai_weight
+
+        return score
+
+    def _is_ai_artwork(self, item) -> bool:
+        """
+        判断是否为AI生成作品.
+
+        Args:
+            item: 作品项
+
+        Returns:
+            是否为AI作品
+        """
+        if not hasattr(item, 'tags'):
+            return False
+
+        ai_tags = [
+            'AI生成',
+            'AI-illust',
+            'AIart',
+            'AIイラスト',
+            'AI绘画',
+            'AIArt',
+            'NovelAI',
+            'Stable Diffusion',
+            'Midjourney',
+        ]
+
+        tags = [tag.name.lower() for tag in item.tags]
+        return any(ai_tag.lower() in tags for ai_tag in ai_tags)
+
+    def _is_r18(self, item) -> bool:
+        """
+        判断是否为R18生成作品.
+
+        Args:
+            item: 作品项
+
+        Returns:
+            是否为R18作品
+        """
+        if not hasattr(item, 'tags'):
+            return False
+        tags = []
+        if hasattr(item, 'tags'):
+            tags = [tag.name for tag in item.tags]
+        is_r18 = False
+        r18_keywords = ['R-18', 'R18', 'R-18G', 'R18G']
+        for tag in tags:
+            t = tag.upper()
+            if any(k in t for k in r18_keywords):
+                is_r18 = True
+                break
+        return is_r18
+
+    def _is_too_old(self, create_date: str) -> bool:
+        """
+        判断作品是否超过72小时.
+
+        Args:
+            create_date: 作品创建日期字符串
+
+        Returns:
+            是否超过72小时
+        """
+        try:
+            post_date = self._parse_create_date(create_date)
+            now = get_utc_now()
+            hours_diff = (now - post_date).total_seconds() / 3600
+            return hours_diff > 72
+        except Exception as e:
+            logger.error(f"Error parsing date {create_date}: {e}")
+            return False
+
     def sync_follows(self) -> dict:
         """同步关注列表."""
         self._ensure_initialized()
@@ -546,7 +914,7 @@ class PixivService:
             tags = [tag.name for tag in item.tags]
 
         # 判断R18
-        is_r18 = self._classify_content(item, tags)
+        is_r18 = self._is_r18(item)
 
         # 解析rank
         rank = None
@@ -784,7 +1152,7 @@ class PixivService:
                         try:
                             artwork_pages = self._parse_artwork(item)
                             for artwork_data in artwork_pages:
-                                artwork_data['collect_type'] = log_type
+                                artwork_data['collect_type'] = 'follow_works'
                                 artworks_list.append(artwork_data)
                                 new_count += 1
                         except Exception as e:
@@ -1161,22 +1529,22 @@ class PixivService:
         # 检查作品类型
         collect_type = existing.collect_type
 
-        if collect_type in ['follow_new_works', 'follow_user_artworks']:
+        # 关注作品：已存在则跳过
+        if collect_type == 'follow_works':
             logger.info(
                 f"作品 {item.id} 已存在（{collect_type}），停止采集"
             )
             return False
 
-        if collect_type in [
-            'daily_rank', 'weekly_rank', 'monthly_rank', 'ranking_works'
-        ]:
+        # 官方排行榜和自定义榜单：因为这是用户作品，更新为 follow_works
+        if collect_type in ['ranking_works', 'custom_rank']:
             logger.info(
                 f"作品 {item.id} 类型为 {collect_type}，"
-                f"更新为 follow_new_works"
+                f"更新为 follow_works（用户作品）"
             )
             self._artwork_repo.update(
                 existing.id,
-                collect_type='follow_new_works'
+                collect_type='follow_works'
             )
             return True
 
@@ -1213,7 +1581,7 @@ class PixivService:
         # 设置作品类型
         artworks = []
         for artwork_data in artwork_pages:
-            artwork_data['collect_type'] = 'follow_new_works'
+            artwork_data['collect_type'] = 'follow_works'
             artworks.append(artwork_data)
 
         return {
@@ -1526,14 +1894,3 @@ class PixivService:
             logger.error(f"Failed to cleanup logs: {e}")
             self._collection_repo.update_error(log.id, str(e))
             raise
-
-    def _classify_content(self, item, tags: list) -> bool:
-        """判断是否为R18内容."""
-        is_r18 = False
-        r18_keywords = ['R-18', 'R18', 'R-18G', 'R18G']
-        for tag in tags:
-            t = tag.upper()
-            if any(k in t for k in r18_keywords):
-                is_r18 = True
-                break
-        return is_r18

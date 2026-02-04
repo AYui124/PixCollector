@@ -289,18 +289,19 @@
                 </div>
 
                 <div class="mb-5">
-                    <div class="field">
-                        <label for="update-interval" class="label is-small has-text-weight-medium mb-2">更新间隔（天）</label>
-                        <input type="number" id="update-interval" min="1" max="365" value="30"
-                            class="input config-input">
-                        <p class="help mt-1 is-small has-text-grey-light">更新间隔多久天内发布的作品元数据</p>
-                    </div>
-
-                    <div class="field">
-                        <label for="update-max-per-run" class="label is-small has-text-weight-medium mb-2">每次更新最大处理数</label>
-                        <input type="number" id="update-max-per-run" min="1" max="1000" value="200"
-                            class="input config-input">
-                        <p class="help mt-1 is-small has-text-grey-light">每次更新任务最多处理的作品数量</p>
+                    <div class="columns is-mobile">
+                        <div class="column">
+                            <label for="update-interval" class="label is-small has-text-weight-medium mb-2">更新间隔（天）</label>
+                            <input type="number" id="update-interval" min="1" max="365" value="30"
+                                class="input config-input">
+                            <p class="help mt-1 is-small has-text-grey-light">更新间隔多久天内发布的作品元数据</p>
+                        </div>
+                        <div class="column">
+                            <label for="update-max-per-run" class="label is-small has-text-weight-medium mb-2">每次更新最大处理数</label>
+                            <input type="number" id="update-max-per-run" min="1" max="1000" value="200"
+                                class="input config-input">
+                            <p class="help mt-1 is-small has-text-grey-light">每次更新任务最多处理的作品数量</p>
+                        </div>
                     </div>
 
                     <div class="field">
@@ -334,6 +335,12 @@
                         <p class="help mt-1 is-small has-text-grey-light">每个排行榜采集多少页</p>
                     </div>
 
+                    <div class="field">
+                        <label for="custom-ranking-keywords" class="label is-small has-text-weight-medium mb-2">自定义榜单关键词</label>
+                        <input type="text" id="custom-ranking-keywords" placeholder="" class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">多个关键词用逗号分隔，系统将依次搜索每个关键词</p>
+                    </div>
+
                     <button onclick="saveConfig(event)" class="save-button" style="background: linear-gradient(90deg, #059669 0%, #047857 100%); color: white;">
                         保存采集配置
                     </button>
@@ -357,7 +364,7 @@
                 <div class="mb-5">
                     <div class="field">
                         <label class="label is-small has-text-weight-medium mb-2">
-                            排行榜采集
+                            自定标签排行采集
                             <span class="cron-tooltip">
                                 <span class="info-icon">?</span>
                                 <span class="tooltip-text">
@@ -831,6 +838,7 @@ async function loadConfig() {
             document.getElementById('access-token').value = config.access_token || '';
             document.getElementById('refresh-token').value = config.refresh_token || '';
             document.getElementById('ranking-collect-pages').value = config.ranking_collect_pages || 5;
+            document.getElementById('custom-ranking-keywords').value = config.custom_ranking_keywords || '';
         }
     } catch (error) {
         console.error('加载配置失败:', error);
@@ -938,7 +946,8 @@ async function saveConfig(event) {
         error_delay_other_min: parseFloat(document.getElementById('error-delay-other-min').value),
         error_delay_other_max: parseFloat(document.getElementById('error-delay-other-max').value),
         log_retention_days: parseInt(document.getElementById('log-retention-days').value),
-        ranking_collect_pages: parseInt(document.getElementById('ranking-collect-pages').value)
+        ranking_collect_pages: parseInt(document.getElementById('ranking-collect-pages').value),
+        custom_ranking_keywords: document.getElementById('custom-ranking-keywords').value
     };
 
     setButtonLoading(button, true);

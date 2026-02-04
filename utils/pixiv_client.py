@@ -223,3 +223,50 @@ class PixivClient:
         except Exception as e:
             logger.warning(f"Token verification failed: {e}")
             raise
+
+    def search_illust(
+        self,
+        word: str,
+        offset: int = 0,
+    ) -> Any:
+        """
+        搜索插画作品.
+
+        Args:
+            word: 搜索关键词
+            search_target: 搜索类型
+                - partial_match_for_tags: 标签部分匹配
+                - exact_match_for_tags: 标签完全匹配
+                - title_and_caption: 标题和说明
+                - keyword: 关键词
+            sort: 排序方式
+                - date_desc: 按发布时间降序（最新）
+                - date_asc: 按发布时间升序
+                - popular_desc: 热门排序（需会员）
+            duration: 时间范围
+                - within_last_day: 最近一天
+                - within_last_week: 最近一周
+                - within_last_month: 最近一月
+            offset: 偏移量（分页）
+            search_ai_type: AI作品类型
+                - 0: 过滤AI作品
+                - 1: 显示AI作品
+                - None: 不限制
+
+        Returns:
+            搜索结果数据
+
+        Raises:
+            Exception: 搜索失败
+        """
+        try:
+            return self._api.search_illust(
+                word=word,
+                search_target='partial_match_for_tags',
+                sort='date_desc',
+                offset=offset,
+                search_ai_type=0,
+            )
+        except Exception as e:
+            logger.error(f"Failed to search illust: {e}")
+            raise

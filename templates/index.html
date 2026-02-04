@@ -278,25 +278,32 @@
                     </div>
                 </div>
                 
-                <button onclick="collectDaily()" class="action-button" style="background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);">
+                <button onclick="collectDailyRank()" class="action-button" style="background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);">
                     <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3 2.286 6.857z" />
                     </svg>
-                    采集每日排行
+                    采集官方每日排行
                 </button>
 
-                <button onclick="collectWeekly()" class="action-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%);">
+                <button onclick="collectWeeklyRank()" class="action-button" style="background: linear-gradient(90deg, #9333ea 0%, #7c3aed 100%);">
                     <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3 2.286 6.857z" />
                     </svg>
-                    采集每周排行
+                    采集官方每周排行
                 </button>
 
-                <button onclick="collectMonthly()" class="action-button" style="background: linear-gradient(90deg, #e11d48 0%, #be123c 100%);">
+                <button onclick="collectMonthlyRank()" class="action-button" style="background: linear-gradient(90deg, #e11d48 0%, #be123c 100%);">
                     <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3 2.286 6.857z" />
                     </svg>
-                    采集每月排行
+                    采集官方每月排行
+                </button>
+                
+                <button onclick="collectCustomRank()" class="action-button" style="background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);">
+                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    采集自定标签排行
                 </button>
                 
                 <button onclick="syncFollows()" class="action-button" style="background: linear-gradient(90deg, #059669 0%, #047857 100%);">
@@ -338,7 +345,7 @@
 
         <!-- 最新日志 -->
         <div class="column is-12-tablet is-half-desktop">
-            <div class="box" style="border-radius: 1rem; min-height: 35rem;">
+            <div class="box" style="border-radius: 1rem; min-height: 40.6rem;">
                 <div class="level">
                     <div class="level-left">
                         <h2 class="title is-5">最新采集日志</h2>
@@ -552,6 +559,7 @@ async function updateTaskStatus(taskId) {
         if (status === 'running' && log) {
             const typeMap = {
                 'ranking_works': '排行作品采集',
+                'custom_rank': '自定义榜单采集',
                 'follow_new_follow': '关注列表同步',
                 'follow_new_works': '关注用户新作品采集',
                 'follow_user_artworks': '存量作品采集',
@@ -678,16 +686,20 @@ async function loadRecentLogs() {
     }
 }
 
-async function collectDaily() {
-    await submitTaskWithProgress('/api/collect/daily', '每日排行采集任务已提交');
+async function collectDailyRank() {
+    await submitTaskWithProgress('/api/collect/daily-rank', '每日排行采集任务已提交');
 }
 
-async function collectWeekly() {
-    await submitTaskWithProgress('/api/collect/weekly', '每周排行采集任务已提交');
+async function collectWeeklyRank() {
+    await submitTaskWithProgress('/api/collect/weekly-rank', '每周排行采集任务已提交');
 }
 
-async function collectMonthly() {
-    await submitTaskWithProgress('/api/collect/monthly', '每月排行采集任务已提交');
+async function collectMonthlyRank() {
+    await submitTaskWithProgress('/api/collect/monthly-rank', '每月排行采集任务已提交');
+}
+
+async function collectCustomRank() {
+    await submitTaskWithProgress('/api/collect/custom-rank', '自定义榜单采集任务已提交');
 }
 
 async function syncFollows() {

@@ -96,6 +96,30 @@ def collect_monthly_rank_task() -> dict:
 
 @huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
 @track_task
+def collect_custom_rank_task() -> dict:
+    """
+    异步采集关键词排行榜.
+
+    Returns:
+        采集结果
+    """
+    pixiv_service = _get_pixiv_service()
+    if not pixiv_service:
+        return {'success': False, 'message': 'Pixiv service not initialized'}
+
+    try:
+        result: dict = pixiv_service.collect_custom_rank()
+        return result
+    except Exception as e:
+        logger.error(
+            f"Custom rank collection task failed: {e}",
+            exc_info=True
+        )
+        return {'success': False, 'message': str(e)}
+
+
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
 def sync_follows_task() -> dict:
     """
     异步同步关注列表.
@@ -325,7 +349,8 @@ def _execute_ranking_tasks():
     tasks = [
         # ('daily', collect_daily_rank_task),
         # ('weekly', collect_weekly_rank_task),
-        ('monthly', collect_monthly_rank_task)
+        # ('monthly', collect_monthly_rank_task)
+        ('custom', collect_custom_rank_task)
     ]
     for rank_type, task_func in tasks:
         try:
