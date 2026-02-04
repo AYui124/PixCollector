@@ -158,6 +158,7 @@
                         <select id="log-type">
                             <option value="">全部类型</option>
                             <option value="ranking_works">排行作品</option>
+                            <option value="custom_rank">自定义榜单</option>
                             <option value="follow_new_follow">同步关注</option>
                             <option value="follow_new_works">关注作品</option>
                             <option value="update_artworks">更新作品</option>
@@ -378,6 +379,7 @@ async function updateTaskStatus(taskId) {
         if (status === 'running' && log) {
             const typeMap = {
                 'ranking_works': '排行作品采集',
+                'custom_rank': '自定义榜单采集',
                 'follow_new_follow': '关注列表同步',
                 'follow_new_works': '关注用户新作品采集',
                 'follow_user_artworks': '存量作品采集',
@@ -522,6 +524,7 @@ function displayLogs(logs) {
 
     const typeMap = {
         'ranking_works': '排行作品',
+        'custom_rank': '自定义榜单',
         'follow_new_follow': '同步关注',
         'follow_new_works': '关注作品',
         'update_artworks': '更新作品',
@@ -530,6 +533,7 @@ function displayLogs(logs) {
 
     const typeColors = {
         'ranking_works': 'background-color: #dbeafe; color: #1e40af;',
+        'custom_rank': 'background-color: #e9d5ff; color: #6b21a8;',
         'follow_new_follow': 'background-color: #d1fae5; color: #065f46;',
         'follow_new_works': 'background-color: #cffafe; color: #164e63;',
         'update_artworks': 'background-color: #fef3c7; color: #92400e;',
