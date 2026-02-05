@@ -648,8 +648,8 @@ class PixivService:
         if hours_since_post < 3:
             return 0.0
 
-        # 过滤条件2: 收藏数 < 200
-        if bookmark_count < 200:
+        # 过滤条件2: 收藏数 < 300
+        if bookmark_count < 300:
             return 0.0
 
         # 过滤条件3: r18
@@ -693,7 +693,7 @@ class PixivService:
 
         # 根据时间判断阈值
         is_within_24h = hours_since_post < 24
-        min_threshold = 8.5 if is_within_24h else 3.4
+        min_threshold = 9.0 if is_within_24h else 3.2
 
         # 未达到阈值则返回0
         if score < min_threshold:
@@ -988,7 +988,7 @@ class PixivService:
                     'is_r18': bool(is_r18),
                     'type': artwork_type,
                     'is_valid': bool(is_valid),
-                    'error_message': err_msg,
+                    'error_message': None if bool(is_valid) else err_msg,
                     'last_updated_at': post_date,
                     'collect_type': '',
                     'created_at': get_utc_now()
@@ -1024,7 +1024,7 @@ class PixivService:
                 'is_r18': bool(is_r18),
                 'type': artwork_type,
                 'is_valid': bool(is_valid),
-                'error_message': err_msg,
+                'error_message': None if bool(is_valid) else err_msg,
                 'last_updated_at': post_date,
                 'collect_type': '',
                 'created_at': get_utc_now()
