@@ -300,3 +300,19 @@ def get_task_status(task_id):
     except Exception as e:
         logger.error(f"Failed to get task status: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@collect_api.route('/collect/delete-follow/<int:user_id>', methods=['POST'])
+@login_required
+def delete_follow_with_artworks(user_id):
+    """删除关注及其所有作品."""
+    try:
+        task = huey_service.delete_follow_and_artworks_task(user_id)
+        return jsonify({
+            'success': True,
+            'task_id': task.id,
+            'message': '删除任务已提交'
+        })
+    except Exception as e:
+        logger.error(f"Delete follow task submission failed: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
