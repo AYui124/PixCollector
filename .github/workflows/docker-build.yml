@@ -38,7 +38,7 @@ jobs:
       # 4. Build Docker image（latest + commit sha）
       - name: Build Docker image
         run: |
-          docker build -f Dockerfile_gitflow \
+          docker build -f Dockerfile.gitflow \
             -t ${{ steps.vars.outputs.IMAGE }}:latest \
             -t ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG }} \
             -t ${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.SHA_TAG }} \
