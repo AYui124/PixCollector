@@ -285,3 +285,15 @@ class ArtworkService:
             更新的作品数量
         """
         return self.artwork_repo.restore_illust(illust_id)
+
+    def delete_by_author_id(self, author_id: int) -> int:
+        """
+        删除指定作者的所有作品.
+
+        Args:
+            author_id: 作者ID
+
+        Returns:
+            删除的作品数量
+        """
+        return self.artwork_repo.delete_by_author_id(author_id)

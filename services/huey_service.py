@@ -280,6 +280,47 @@ def cleanup_logs_task() -> dict:
         return {'success': False, 'message': str(e)}
 
 
+@huey.task(expires=Config.HUEY_RESULT_TIMEOUT)
+@track_task
+def delete_follow_and_artworks_task(user_id: int) -> dict:
+    """
+    异步删除关注及其所有作品.
+
+    Args:
+        user_id: 用户ID
+
+    Returns:
+        删除结果
+    """
+    try:
+        # 先删除该用户的所有作品
+        artwork_count = services.artwork.delete_by_author_id(user_id)
+
+        # 再删除关注记录
+        follow_deleted = services.follow.delete_by_user_id(user_id)
+
+        if follow_deleted:
+            return {
+                'success': True,
+                'message': f'成功删除 {artwork_count} 个作品和关注记录',
+                'artwork_count': artwork_count,
+                'follow_deleted': True
+            }
+        else:
+            return {
+                'success': False,
+                'message': f'删除了 {artwork_count} 个作品，但关注记录不存在',
+                'artwork_count': artwork_count,
+                'follow_deleted': False
+            }
+    except Exception as e:
+        logger.error(
+            f"Delete follow and artworks task failed: {e}",
+            exc_info=True
+        )
+        return {'success': False, 'message': str(e)}
+
+
 def get_task_status(task_id: str) -> dict:
     """
     获取任务状态.

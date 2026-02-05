@@ -542,3 +542,27 @@ class ArtworkRepository(BaseRepository[Artwork]):
                 count += 1
 
             return count
+
+    def delete_by_author_id(self, author_id: int) -> int:
+        """
+        删除指定作者的所有作品.
+
+        Args:
+            author_id: 作者ID
+
+        Returns:
+            删除的作品数量
+        """
+        with self.get_session() as session:
+            # 先获取要删除的数量
+            query = select(func.count()).select_from(Artwork).where(
+                Artwork.author_id == author_id
+            )
+            count = session.execute(query).scalar() or 0
+
+            # 执行删除
+            session.execute(
+                delete(Artwork).where(Artwork.author_id == author_id)
+            )
+
+            return count

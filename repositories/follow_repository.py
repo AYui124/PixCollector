@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from models.follow import Follow
 from repositories.base_repository import BaseRepository
@@ -266,3 +266,29 @@ class FollowRepository(BaseRepository[Follow]):
                     created_count += 1
 
             return created_count
+
+    def delete_by_user_id(self, user_id: int) -> bool:
+        """
+        根据用户ID删除关注.
+
+        Args:
+            user_id: 用户ID
+
+        Returns:
+            是否删除成功
+        """
+        with self.get_session() as session:
+            # 检查是否存在
+            follow = session.execute(
+                select(Follow).where(Follow.user_id == user_id)
+            ).scalar_one_or_none()
+
+            if not follow:
+                return False
+
+            # 执行删除
+            session.execute(
+                delete(Follow).where(Follow.user_id == user_id)
+            )
+
+            return True

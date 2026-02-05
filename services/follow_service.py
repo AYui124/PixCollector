@@ -100,3 +100,15 @@ class FollowService:
             关注实例或None
         """
         return self.follow_repo.get_by_user_id(user_id)
+
+    def delete_by_user_id(self, user_id: int) -> bool:
+        """
+        根据用户ID删除关注.
+
+        Args:
+            user_id: 用户ID
+
+        Returns:
+            是否删除成功
+        """
+        return self.follow_repo.delete_by_user_id(user_id)

@@ -28,6 +28,8 @@
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         transition: all 0.3s;
         border: 1px solid #f3f4f6;
+        display: flex;
+        flex-direction: column;
     }
     
     .user-card:hover {
@@ -279,7 +281,7 @@
     </nav>
 </div>
 
-<!-- 确认对话框 -->
+<!-- 确认采集对话框 -->
 <div id="confirm-modal" class="modal">
     <div class="modal-background" onclick="closeConfirmDialog()"></div>
     <div class="modal-card">
@@ -294,6 +296,30 @@
         <footer class="modal-card-foot" style="justify-content: flex-end;margin-top: 0;padding: 10px;">
             <button class="button" onclick="closeConfirmDialog()">取消</button>
             <button class="button is-primary" id="confirm-collect-btn" onclick="confirmCollect()">确认采集</button>
+        </footer>
+    </div>
+</div>
+
+<!-- 删除确认对话框 -->
+<div id="delete-confirm-modal" class="modal">
+    <div class="modal-background" onclick="closeDeleteConfirmDialog()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head" style="background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%); border-bottom: 1px solid #ef4444;">
+            <p class="modal-card-title" style="color: white;">删除确认</p>
+            <button class="delete" aria-label="close" onclick="closeDeleteConfirmDialog()" style="color: white;"></button>
+        </header>
+        <section class="modal-card-body">
+            <div id="delete-user-info" class="mb-4"></div>
+            <div class="notification is-warning is-light" style="border-left: 4px solid #f59e0b;">
+                <p class="is-size-5 has-text-weight-bold" style="color: #b91c1c;">
+                    ⚠️ 警告：此操作不可恢复！
+                </p>
+            </div>
+            <p class="has-text-grey mt-4">确定要删除该关注及其所有作品吗？删除后无法恢复数据。</p>
+        </section>
+        <footer class="modal-card-foot" style="justify-content: flex-end;margin-top: 0;padding: 10px;">
+            <button class="button" onclick="closeDeleteConfirmDialog()">取消</button>
+            <button class="button is-danger" onclick="confirmDelete()">确认删除</button>
         </footer>
     </div>
 </div>
@@ -434,28 +460,49 @@ function displayFollows(follows) {
         return `
             <div class="column is-12-mobile is-6-desktop">
                 <div class="user-card">
-                    <div style="padding: 1.25rem;">
-                        <div class="level is-mobile mb-3">
-                            <div class="mr-3" style="cursor: pointer;" onclick="showConfirmDialog(${follow.user_id}, '${follow.user_name}', '${follow.avatar_url || ''}')">
-                                ${follow.avatar_url ? 
-                                    `<img src="${useProxy(follow.avatar_url)}" 
-                                          alt="${follow.user_name}" 
-                                          style="width: 3.75rem; height: 3.75rem; object-fit: cover; border-radius: 50%; transition: all 0.3s;"
-                                          onmouseover="this.style.transform='scale(1.1)'"
-                                          onmouseout="this.style.transform='scale(1)'">` : 
-                                    `<div class="avatar-placeholder" 
-                                          style="width: 3.75rem; height: 3.75rem; transition: all 0.3s;"
-                                          onmouseover="this.style.transform='scale(1.1)'"
-                                          onmouseout="this.style.transform='scale(1)'">
-                                        <svg style="width: 2rem; height: 2rem; color: #9ca3af;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 007-7z" />
-                                        </svg>
-                                    </div>`}
-                            </div>
-                            <div class="level-left" style="flex: 1;">
-                                <h5 class="is-size-5 has-text-weight-bold has-text-grey-darker mb-2">
-                                    <span class="has-text-primary">ID: ${follow.user_id}</span> - ${follow.user_name}
-                                </h5>
+                    <div style="padding: 1.25rem; flex: 1;">
+                        <div class="mb-3">
+                            <div class="level is-mobile">
+                                <!-- 左边：头像 -->
+                                <div class="mr-3" style="cursor: pointer;" onclick="showConfirmDialog(${follow.user_id}, '${follow.user_name}', '${follow.avatar_url || ''}')">
+                                    ${follow.avatar_url ? 
+                                        `<img src="${useProxy(follow.avatar_url)}" 
+                                              alt="${follow.user_name}" 
+                                                  style="width: 3.75rem; height: 3.75rem; object-fit: cover; border-radius: 50%; transition: all 0.3s;"
+                                                  onmouseover="this.style.transform='scale(1.1)'"
+                                                  onmouseout="this.style.transform='scale(1)'">` : 
+                                        `<div class="avatar-placeholder" 
+                                              style="width: 3.75rem; height: 3.75rem; transition: all 0.3s;"
+                                              onmouseover="this.style.transform='scale(1.1)'"
+                                              onmouseout="this.style.transform='scale(1)'">
+                                            <svg style="width: 2rem; height: 2rem; color: #9ca3af;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 007-7z" />
+                                            </svg>
+                                        </div>`}
+                                </div>
+                                
+                                <!-- 右侧内容 -->
+                                <div style="flex: 1; display: flex; flex-direction: column;">
+                                    <!-- 第1行：ID 和删除按钮 -->
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                        <span class="is-size-5 has-text-weight-bold has-text-grey-darker">
+                                            <span class="has-text-primary">ID: ${follow.user_id}</span>
+                                        </span>
+                                        <button onclick="showDeleteConfirmDialog(${follow.user_id}, '${follow.user_name}', '${follow.avatar_url || ''}')"
+                                                class="button is-small is-danger is-light"
+                                                style="border-radius: 0.5rem; margin-left: 0.5rem;"
+                                                title="删除关注及其作品">
+                                            <span class="icon is-small">
+                                                <svg style="width: 1rem; height: 1rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- 第2行：用户名 -->
+                                    <h5 class="is-size-5 has-text-weight-bold has-text-grey-darker" style="margin: 0;">${follow.user_name}</h5>
+                                </div>
                             </div>
                         </div>
                         
@@ -525,16 +572,17 @@ function closeConfirmDialog() {
 }
 
 // 提交任务并显示进度
-async function submitTaskWithProgress(apiEndpoint, user_id ,successMessage) {
+async function submitTaskWithProgress(apiEndpoint, userId, successMessage) {
     try {
+        // 判断是否需要在body中传递user_id
+        const body = userId ? JSON.stringify({ user_id: userId }) : undefined;
+        
         const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                user_id: user_id
-            })
+            body: body
         });
         
         const data = await response.json();
@@ -750,6 +798,45 @@ async function updateTaskStatus(taskId) {
         `;
         clearInterval(taskCheckInterval);
     }
+}
+
+function showDeleteConfirmDialog(userId, userName, avatarUrl) {
+    selectedUser = { userId, userName, avatarUrl };
+    
+    const userInfoHtml = `
+        <div class="level is-mobile mb-4">
+            ${avatarUrl ? 
+                `<img src="${useProxy(avatarUrl)}" class="mr-3" 
+                      alt="${userName}"
+                      style="width: 4rem; height: 4rem; object-fit: cover; border-radius: 50%;">` : 
+                `<div class="avatar-placeholder mr-3" 
+                      style="width: 4rem; height: 4rem;">
+                    <svg style="width: 2rem; height: 2rem; color: #9ca3af;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 007-7z" />
+                    </svg>
+                </div>`}
+            <div class="level-left" style="flex: 1;">
+                <h5 class="is-size-5 has-text-weight-bold has-text-grey-darker mb-2">
+                    <span class="has-text-primary">ID: ${userId}</span> - ${userName}
+                </h5>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('delete-user-info').innerHTML = userInfoHtml;
+    document.getElementById('delete-confirm-modal').classList.add('is-active');
+}
+
+function closeDeleteConfirmDialog() {
+    document.getElementById('delete-confirm-modal').classList.remove('is-active');
+    selectedUser = null;
+}
+
+async function confirmDelete() {
+    if (!selectedUser) return;
+    
+    await submitTaskWithProgress('/api/collect/delete-follow/' + selectedUser.userId, null, `删除 ${selectedUser.userName} 及其作品的任务已提交`);
+    closeDeleteConfirmDialog();
 }
 
 async function confirmCollect() {
