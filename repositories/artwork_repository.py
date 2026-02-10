@@ -326,7 +326,7 @@ class ArtworkRepository(BaseRepository[Artwork]):
     def get_today_stats(self) -> dict[str, int]:
         """获取今日统计."""
 
-        today = datetime.now().date()
+        today = get_utc_now().date()
         start_of_day = datetime.combine(today, datetime.min.time())
 
         with self.get_session() as session:
