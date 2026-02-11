@@ -8,7 +8,6 @@ from sqlalchemy import delete, func, or_, select
 from models.artwork import Artwork
 from repositories.base_repository import BaseRepository
 from utils.pagination import Pagination
-from utils.time_utils import get_utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -332,7 +331,7 @@ class ArtworkRepository(BaseRepository[Artwork]):
         start_time = datetime.now().replace(
             hour=0, minute=0, second=0, microsecond=0
         ).astimezone(UTC)
-        logger.info(f"today={start_time}")
+
         with self.get_session() as session:
             today_artworks = session.execute(
                 select(func.count()).select_from(
@@ -490,9 +489,9 @@ class ArtworkRepository(BaseRepository[Artwork]):
         Returns:
             作品实例列表
         """
-        update_date = get_utc_now().replace(
+        update_date = datetime.now().replace(
             hour=0, minute=0, second=0, microsecond=0
-        )
+        ).astimezone(UTC)
         with self.get_session() as session:
             query = select(Artwork).where(
                 Artwork.is_valid,
