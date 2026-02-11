@@ -31,7 +31,8 @@ Pixiv图片采集系统 - 基于Python Flask的Pixiv图片自动采集、管理�
 ### 前置要求
 
 - Python 3.12 或更高版本
-- MySQL 5.7 或更高版本
+- MySQL 8 或更高版本
+- Redis
 - Pixiv账号（用于获取API Token）
 
 ### 本地开发或部署
@@ -131,6 +132,7 @@ curl -X POST http://127.0.0.1:5000/api/init
 ## API文档
 
 ### 公开API（无需认证）
+
 详见启动后首页
 
 ## Docker部署
@@ -169,17 +171,20 @@ docker build -t pixcollector:latest .
 系统支持通过Web界面动态配置以下参数，配置保存在数据库中：
 
 #### Pixiv API配置
+
 - `access_token`: Pixiv访问令牌（自动获取）
 - `refresh_token`: Pixiv刷新令牌（必需）
 - `token_expires_at`: Token过期时间（自动管理）
 - `pixiv_user`: Pixiv用户ID（自动获取）
 
 #### 自定义榜单配置
+
 - `custom_ranking_keywords`: 自定义榜单关键词列表（逗号分隔）
   - 示例：`黒スト,贫乳,女の子`
   - 系统会依次搜索每个关键词，按评分筛选高质量作品
 
 #### API请求配置
+
 - `api_delay_min`: 最小请求延迟（秒）
 - `api_delay_max`: 最大请求延迟（秒）
 - `error_delay_429_min`: 429错误最小延迟（秒）
@@ -190,17 +195,21 @@ docker build -t pixcollector:latest .
 - `error_delay_other_max`: 其他错误最大延迟（秒）
 
 #### 排行榜采集配置
+
 - `ranking_collect_pages`: 官方排行榜采集页数（默认5页）
 
 #### 关注用户配置
+
 - `new_user_backtrack_years`: 新用户回采年限（默认2年）
 
 #### 作品更新配置
+
 - `update_interval_days`: 作品更新间隔天数（默认30天）
 - `update_max_per_run`: 每次更新最大作品数（默认200）
 - `invalid_artwork_action`: 失效作品处理策略（delete/mark，默认mark）
 
 #### 日志配置
+
 - `log_retention_days`: 日志保留天数（默认90天）
 
 ### 自定义榜单评分规则
@@ -259,6 +268,10 @@ docker build -t pixcollector:latest .
 ## 许可证
 
 本项目仅供学习和研究使用。请遵守Pixiv的服务条款和相关法律法规。
+
+## 已知问题
+
+1. 项目里所有时间以UTC保存，展示与统计以服务器本地时间处理，导致用户在不同时区显示不对
 
 ## 贡献
 

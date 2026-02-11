@@ -1,5 +1,6 @@
 """作品Repository（SQLAlchemy 2.0）."""
-from datetime import datetime
+import logging
+from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 from sqlalchemy import delete, func, or_, select
@@ -8,6 +9,8 @@ from models.artwork import Artwork
 from repositories.base_repository import BaseRepository
 from utils.pagination import Pagination
 from utils.time_utils import get_utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class ArtworkRepository(BaseRepository[Artwork]):
@@ -258,7 +261,7 @@ class ArtworkRepository(BaseRepository[Artwork]):
 
             # 分页
             offset = (page - 1) * per_page
-            query = query.order_by(Artwork.post_date.desc())
+            query = query.order_by(Artwork.created_at.desc())
             query = query.offset(offset).limit(per_page)
 
             items = session.execute(query).scalars().all()
@@ -326,14 +329,15 @@ class ArtworkRepository(BaseRepository[Artwork]):
     def get_today_stats(self) -> dict[str, int]:
         """获取今日统计."""
 
-        today = get_utc_now().date()
-        start_of_day = datetime.combine(today, datetime.min.time())
-
+        start_time = datetime.now().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ).astimezone(UTC)
+        logger.info(f"today={start_time}")
         with self.get_session() as session:
             today_artworks = session.execute(
                 select(func.count()).select_from(
                     select(Artwork).filter(
-                        Artwork.created_at >= start_of_day
+                        Artwork.created_at >= start_time
                     ).subquery()
                 )
             ).scalar() or 0
@@ -341,7 +345,7 @@ class ArtworkRepository(BaseRepository[Artwork]):
             today_updates = session.execute(
                 select(func.count()).select_from(
                     select(Artwork).filter(
-                        Artwork.last_updated_at >= start_of_day
+                        Artwork.last_updated_at >= start_time
                     ).subquery()
                 )
             ).scalar() or 0
