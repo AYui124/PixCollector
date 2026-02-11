@@ -1730,7 +1730,9 @@ class PixivService:
                 'update_max_per_run', 200
             )
 
-            cutoff_date = get_utc_now() - timedelta(days=update_days)
+            cutoff_date = datetime.now().replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ).astimezone(UTC) - timedelta(days=update_days)
 
             artworks = self._artwork_repo.get_artworks_for_update(
                 post_date_start=cutoff_date,
