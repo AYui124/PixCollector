@@ -898,6 +898,36 @@ class PixivService:
             self._collection_repo.update_error(log.id, str(e))
             raise
 
+    def _get_filtered_authors(self) -> set[int]:
+        """
+        获取需要过滤的作者ID列表.
+
+        Returns:
+            作者ID集合
+        """
+        authors_str = self.get_config_value('filtered_authors', '')
+        if not authors_str:
+            return set()
+
+        try:
+            # 支持逗号、分号、空格分隔
+            authors = []
+            for separator in [',', ';', ' ']:
+                if separator in authors_str:
+                    authors = [
+                        a.strip()
+                        for a in authors_str.split(separator)
+                        if a.strip()
+                    ]
+                    break
+            else:
+                authors = [authors_str.strip()]
+
+            return {int(a) for a in authors}
+        except (ValueError, AttributeError) as e:
+            logger.warning(f"Failed to parse filtered_authors: {e}")
+            return set()
+
     def _parse_artwork(self, item) -> list[dict]:
         """
         解析作品数据.
@@ -942,12 +972,26 @@ class PixivService:
         # 生成分享URL
         share_url = f"https://www.pixiv.net/artworks/{item.id}"
 
+        # 检查是否在过滤作者列表中
+        filtered_authors = self._get_filtered_authors()
+        author_id = (
+            item.user.id
+            if hasattr(item, 'user') and item.user
+            else None
+        )
+
         # 处理多图作品
         artworks_list = []
         is_valid = artwork_type == 'illust' and '漫画' not in tags
         err_msg = (
             artwork_type if artwork_type != 'illust' else 'Not like'
         )
+
+        # 检查作者过滤
+        if is_valid and author_id and author_id in filtered_authors:
+            is_valid = False
+            err_msg = 'Filtered author'
+            logger.debug(f"Author {author_id} is in filtered list")
 
         if hasattr(item, 'meta_pages') and item.meta_pages:
             # 多图作品
@@ -1704,6 +1748,63 @@ class PixivService:
                 logger.error(f"创建新用户失败 {user_id}: {e}")
                 return (False, 0)
 
+    def _extract_error_code(self, error: Exception) -> int | None:
+        """
+        从异常中提取 HTTP 错误码.
+
+        Args:
+            error: 异常对象
+
+        Returns:
+            HTTP 错误码（如果无法识别则返回 None）
+        """
+
+        # 尝试从 pixivpy3 的特定异常属性中提取
+        if hasattr(error, 'status_code'):
+            return int(error.status_code)
+
+        error_str = str(error)
+
+        # 尝试从异常消息中提取状态码
+        # pixivpy3 可能会在错误消息中包含状态码
+        for code in [404, 403, 429, 500, 502, 503]:
+            if str(code) in error_str:
+                return code
+
+        return None
+
+    def _handle_invalid_artwork(
+        self, illust_id: int, invalid_action: str
+    ) -> None:
+        """
+        处理失效作品的统一方法.
+
+        Args:
+            illust_id: 作品ID
+            invalid_action: 处理策略 ('mark' 或 'delete')
+        """
+        if invalid_action == 'delete':
+            # 删除该作品的所有页
+            deleted = self._artwork_repo.delete_by_illust_id(
+                illust_id
+            )
+            if deleted:
+                logger.info(
+                    f'Deleted {deleted} pages for '
+                    f'artwork {illust_id}'
+                )
+        else:
+            # 默认策略：标记为失效
+            marked = self._artwork_repo.mark_illust_invalid(
+                illust_id,
+                '作品已从Pixiv删除'
+            )
+            if marked:
+                logger.info(
+                    f'Marked {marked} pages as invalid for '
+                    f'artwork {illust_id}'
+                )
+
     def update_artworks(self) -> dict:
         """
         更新作品元数据.
@@ -1760,39 +1861,60 @@ class PixivService:
                     logger.debug(
                         f'update artwork={artwork.illust_id}-{artwork.title}'
                     )
-                    detail = self.client.get_illust_detail(artwork.illust_id)
-                    self.limiter.fast_wait(0.1, 0.5)
 
-                    if not detail or not hasattr(detail, 'illust'):
-                        logger.info(
-                            f'{artwork.illust_id} is not available '
-                            'on pixiv now'
+                    try:
+                        detail = self.client.get_illust_detail(
+                            artwork.illust_id
                         )
-                        # 根据配置处理失效作品
-                        if invalid_action == 'delete':
-                            # 删除该作品的所有页
-                            deleted = self._artwork_repo.delete_by_illust_id(
-                                artwork.illust_id
+                        self.limiter.fast_wait(0.1, 0.5)
+
+                        # 检查是否获取到详情
+                        if not detail or not hasattr(detail, 'illust'):
+                            logger.info(
+                                f'{artwork.illust_id} detail is empty, '
+                                'treating as not found'
                             )
-                            if deleted:
-                                invalid_count += 1
-                                logger.info(
-                                    f'Deleted {deleted} pages for '
-                                    f'artwork {artwork.illust_id}'
-                                )
+                            # 标记为失效
+                            self._handle_invalid_artwork(
+                                artwork.illust_id, invalid_action
+                            )
+                            invalid_count += 1
+                            continue
+
+                    except Exception as api_error:
+                        # 捕获API调用的异常
+                        error_code = self._extract_error_code(api_error)
+
+                        # 判断错误类型
+                        if error_code in [429, 403]:
+                            # 速率限制错误：跳过并应用延迟
+                            logger.warning(
+                                f'Skipped {artwork.illust_id} due to '
+                                f'{error_code} error (rate limit), '
+                                f'will retry later'
+                            )
+                            self.limiter.handle_error(error_code)
+                            continue
+                        elif error_code == 404:
+                            # 作品不存在：标记为失效
+                            logger.info(
+                                f'{artwork.illust_id} not found (404), '
+                                'marking as invalid'
+                            )
+                            self._handle_invalid_artwork(
+                                artwork.illust_id, invalid_action
+                            )
+                            invalid_count += 1
+                            continue
                         else:
-                            # 默认策略：标记为失效
-                            marked = self._artwork_repo.mark_illust_invalid(
-                                artwork.illust_id,
-                                '作品已从Pixiv删除'
+                            # 其他错误：记录日志并跳过
+                            logger.error(
+                                f'Failed to get detail for '
+                                f'{artwork.illust_id}: '
+                                f'{api_error} (code: {error_code})'
                             )
-                            if marked:
-                                invalid_count += 1
-                                logger.info(
-                                    f'Marked {marked} pages as invalid for '
-                                    f'artwork {artwork.illust_id}'
-                                )
-                        continue
+                            self.limiter.handle_error(error_code)
+                            continue
 
                     item = detail.illust
 
@@ -1826,8 +1948,8 @@ class PixivService:
 
                 except Exception as e:
                     logger.error(
-                        f"Failed to update artwork "
-                        f"{artwork.illust_id}: {e}"
+                        f'Failed to update artwork '
+                        f'{artwork.illust_id}: {e}'
                     )
                     continue
 
