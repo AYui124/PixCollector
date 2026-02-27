@@ -891,7 +891,7 @@ async function confirmInvalidate() {
             notify(data.message);
             closeInvalidateModal();
             // 刷新当前页
-            loadArtworks(currentPage);
+            // loadArtworks(currentPage);
         } else {
             notify('操作失败: ' + data.message, 'error');
         }
@@ -941,7 +941,7 @@ async function confirmRestore() {
             notify(data.message);
             closeRestoreModal();
             // 刷新当前页
-            loadArtworks(currentPage);
+            //loadArtworks(currentPage);
         } else {
             notify('操作失败: ' + data.message, 'error');
         }

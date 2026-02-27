@@ -304,41 +304,49 @@
                         </div>
                     </div>
 
-                    <div class="field">
-                        <label for="invalid-action" class="label is-small has-text-weight-medium mb-2">失效作品处理</label>
-                        <div class="select is-fullwidth">
-                            <select id="invalid-action" class="config-input">
-                                <option value="mark">标记为失效</option>
-                                <option value="delete">删除</option>
-                            </select>
+                    <div class="columns is-mobile">
+                        <div class="column">
+                            <label for="invalid-action" class="label is-small has-text-weight-medium mb-2">失效作品处理</label>
+                            <div class="select is-fullwidth">
+                                <select id="invalid-action" class="config-input">
+                                    <option value="mark">标记为失效</option>
+                                    <option value="delete">删除</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="column">
+                            <label for="backtrack-years" class="label is-small has-text-weight-medium mb-2">新用户回采年数</label>
+                            <input type="number" id="backtrack-years" min="0" max="10" value="2"
+                                class="input config-input">
+                            <p class="help mt-1 is-small has-text-grey-light">新关注用户回采多少年的作品</p>
                         </div>
                     </div>
 
-                    <div class="field">
-                        <label for="backtrack-years" class="label is-small has-text-weight-medium mb-2">新用户回采年数</label>
-                        <input type="number" id="backtrack-years" min="0" max="10" value="2"
-                            class="input config-input">
-                        <p class="help mt-1 is-small has-text-grey-light">新关注用户回采多少年的作品</p>
-                    </div>
-
-                    <div class="field">
-                        <label for="log-retention-days" class="label is-small has-text-weight-medium mb-2">日志保留天数</label>
-                        <input type="number" id="log-retention-days" min="1" max="365" value="30"
-                            class="input config-input">
-                        <p class="help mt-1 is-small has-text-grey-light">采集日志保留多少天</p>
-                    </div>
-
-                    <div class="field">
-                        <label for="ranking-collect-pages" class="label is-small has-text-weight-medium mb-2">排行榜采集页数</label>
-                        <input type="number" id="ranking-collect-pages" min="1" max="10" value="5"
-                            class="input config-input">
-                        <p class="help mt-1 is-small has-text-grey-light">每个排行榜采集多少页</p>
+                    <div class="columns is-mobile">
+                        <div class="column">
+                            <label for="log-retention-days" class="label is-small has-text-weight-medium mb-2">日志保留天数</label>
+                            <input type="number" id="log-retention-days" min="1" max="365" value="30"
+                                class="input config-input">
+                            <p class="help mt-1 is-small has-text-grey-light">采集日志保留多少天</p>
+                        </div>
+                        <div class="column">
+                            <label for="ranking-collect-pages" class="label is-small has-text-weight-medium mb-2">排行榜采集页数</label>
+                            <input type="number" id="ranking-collect-pages" min="1" max="10" value="5"
+                                class="input config-input">
+                            <p class="help mt-1 is-small has-text-grey-light">每个排行榜采集多少页</p>
+                        </div>
                     </div>
 
                     <div class="field">
                         <label for="custom-ranking-keywords" class="label is-small has-text-weight-medium mb-2">自定义榜单关键词</label>
                         <input type="text" id="custom-ranking-keywords" placeholder="" class="input config-input">
                         <p class="help mt-1 is-small has-text-grey-light">多个关键词用逗号分隔，系统将依次搜索每个关键词</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="filtered-authors" class="label is-small has-text-weight-medium mb-2">过滤作者ID</label>
+                        <input type="text" id="filtered-authors" placeholder="" class="input config-input">
+                        <p class="help mt-1 is-small has-text-grey-light">多个作者ID用逗号、分号或空格分隔，这些作者的作品将被标记为无效</p>
                     </div>
 
                     <button onclick="saveConfig(event)" class="save-button" style="background: linear-gradient(90deg, #059669 0%, #047857 100%); color: white;">
@@ -839,6 +847,7 @@ async function loadConfig() {
             document.getElementById('refresh-token').value = config.refresh_token || '';
             document.getElementById('ranking-collect-pages').value = config.ranking_collect_pages || 5;
             document.getElementById('custom-ranking-keywords').value = config.custom_ranking_keywords || '';
+            document.getElementById('filtered-authors').value = config.filtered_authors || '';
         }
     } catch (error) {
         console.error('加载配置失败:', error);
@@ -947,7 +956,8 @@ async function saveConfig(event) {
         error_delay_other_max: parseFloat(document.getElementById('error-delay-other-max').value),
         log_retention_days: parseInt(document.getElementById('log-retention-days').value),
         ranking_collect_pages: parseInt(document.getElementById('ranking-collect-pages').value),
-        custom_ranking_keywords: document.getElementById('custom-ranking-keywords').value
+        custom_ranking_keywords: document.getElementById('custom-ranking-keywords').value,
+        filtered_authors: document.getElementById('filtered-authors').value
     };
 
     setButtonLoading(button, true);
