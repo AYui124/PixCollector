@@ -200,7 +200,8 @@ class PixivClient:
             查询参数字典
         """
         try:
-            return self._api.parse_qs(url)
+            result: dict[str, Any] | None = self._api.parse_qs(url)
+            return result
         except Exception as e:
             logger.error(f"Failed to parse query string: {e}")
             raise
