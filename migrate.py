@@ -105,6 +105,11 @@ def insert_default_system_config():
             'type': 'string',
             'desc': '自定义榜单关键词列表'
         },
+        'filtered_authors': {
+            'value': '',
+            'type': 'string',
+            'desc': '需过滤的作者Id'
+        },
 
         # 速率限制配置
         'api_delay_min': {
